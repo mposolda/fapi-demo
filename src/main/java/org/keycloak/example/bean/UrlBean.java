@@ -2,6 +2,8 @@ package org.keycloak.example.bean;
 
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.example.Services;
+import org.keycloak.example.util.MyConstants;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -32,5 +34,9 @@ public class UrlBean {
 
     public String getClientJwksUri() {
         return baseUrl + "/client-jwks";
+    }
+
+    public String getAccountConsoleUrl() {
+        return Services.instance().getOauthClient().AUTH_SERVER_ROOT + "/realms/" + MyConstants.REALM_NAME + "/account?referrer=" + baseUrl;
     }
 }

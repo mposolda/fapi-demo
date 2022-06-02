@@ -10,6 +10,8 @@ public class SessionData {
 
     private OIDCConfigurationRepresentation authServerInfo;
 
+    private String initToken;
+
     private OIDCClientRepresentation registeredClient;
 
     private KeysWrapper keys;
@@ -22,6 +24,14 @@ public class SessionData {
 
     public void setAuthServerInfo(OIDCConfigurationRepresentation authServerInfo) {
         this.authServerInfo = authServerInfo;
+    }
+
+    public String getInitToken() {
+        return initToken;
+    }
+
+    public void setInitToken(String initToken) {
+        this.initToken = initToken;
     }
 
     public OIDCClientRepresentation getRegisteredClient() {

@@ -2,7 +2,7 @@
     <head><title>FAPI demo</title></head>
     <body>
 
-    <h2>Server Info</h2>
+    <h3>Parameters</h3>
 
 <form id="my-form" method="post" action="${url.action}">
     <div>
@@ -31,6 +31,7 @@
     <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
     <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
     <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
+    <button onclick="redirectToAccountManagement()">Account Management</button>
 </div>
 
 <hr />
@@ -51,6 +52,10 @@
     function submitWithAction(myAction) {
         document.getElementById('my-action').value = myAction;
         document.getElementById('my-form').submit();
+    }
+
+    function redirectToAccountManagement() {
+        window.location.href = "${url.accountConsoleUrl}";
     }
 
 </script>

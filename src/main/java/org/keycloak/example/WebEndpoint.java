@@ -114,6 +114,7 @@ public class WebEndpoint {
                         throw new MyException("Init token is missing. It is required when registering client. Please obtain init token from Keycloak admin console and try again");
                     }
 
+                    session.setInitToken(initToken);
                     ClientRegistrationWrapper clientReg = ClientRegistrationWrapper.create();
                     clientReg.setInitToken(initToken);
                     boolean confidentialClient = params.getFirst("confidential-client") != null;

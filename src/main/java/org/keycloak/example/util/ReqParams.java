@@ -2,6 +2,8 @@ package org.keycloak.example.util;
 
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.keycloak.example.Services;
+
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
@@ -14,7 +16,7 @@ public class ReqParams {
     }
 
     public String getInitToken() {
-        return origParams == null ? "" : origParams.getFirst("init-token");
+        return Services.instance().getSession().getInitToken();
     }
 
 
