@@ -167,3 +167,7 @@ required by the specs.
 
 Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI.
 Contributions are welcome (See above for potential contributions tips and also search for `TODO:` in the code :-) )
+
+## Slides
+
+See slides from devconf 2022 presentation in file [Keycloak FAPI slides](keycloak-fapi-devconf-2022-slides.pdf).
