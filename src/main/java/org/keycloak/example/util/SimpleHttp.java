@@ -342,7 +342,7 @@ public class SimpleHttp {
                         while (it.hasNext()) {
                             Header header = it.nextHeader();
                             if (header.getName().equals("Content-Encoding") && header.getValue().equals("gzip")) {
-                                // is = new GZIPInputStream(is); // TODO:mposolda check if needed
+                                // is = new GZIPInputStream(is);
                                 is = null;
                             }
                         }

@@ -5,7 +5,7 @@ package org.keycloak.example.util;
  */
 public class MyConstants {
 
-    // TODO:mposolda move from constants and make it dynamic?
+    // TODO move from constants and make it dynamic?
     public static final String REALM_NAME = "test";
 
     public static final String SERVER_ROOT = "https://as.keycloak-fapi.org:8443";

@@ -166,4 +166,4 @@ required by the specs.
 ## Contributions
 
 Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI.
-Contributions are welcome (See above for potential contributions tips :-) )
+Contributions are welcome (See above for potential contributions tips and also search for `TODO:` in the code :-) )

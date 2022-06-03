@@ -27,7 +27,7 @@ public class Services {
     private final FreeMarkerUtil freeMarker = new FreeMarkerUtil();
     private volatile OAuthClient oauthClient;
 
-    private final SessionData session = new SessionData(); // TODO:mposolda make sure that this is really session data and not app-scoped stuff
+    private final SessionData session = new SessionData(); // TODO: Make sure that this is really session data and not app-scoped stuff
 
 
     public FreeMarkerUtil getFreeMarker() {

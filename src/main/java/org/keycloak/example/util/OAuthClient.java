@@ -94,6 +94,8 @@ import javax.ws.rs.core.Form;
 import javax.ws.rs.core.UriBuilder;
 
 /**
+ * TODO: This was forked from keycloak testsuite (as well as some other classes of this project). Some cleanup may be nice...
+ *
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  * @author Stan Silvert ssilvert@redhat.com (C) 2016 Red Hat Inc.
  */
@@ -260,7 +262,7 @@ public class OAuthClient {
 
         baseUrl = AUTH_SERVER_ROOT;
         realm = MyConstants.REALM_NAME;
-        clientId = "test-app"; // TODO:mposolda dynamic
+        clientId = "test-app";
         redirectUri = new UrlBean().getClientRedirectUri();
         postLogoutRedirectUri = redirectUri;
         state = () -> {
@@ -1295,7 +1297,6 @@ public class OAuthClient {
                 case Algorithm.ES256:
                 case Algorithm.ES384:
                 case Algorithm.ES512:
-                    // TODO:mposolda do I need this?
                     // verifierContext = new ServerECDSASignatureVerifierContext(key);
                     verifierContext = null;
                     break;
@@ -1792,7 +1793,6 @@ public class OAuthClient {
         private void init(OAuthClient client, boolean fragment) {
 //            isRedirected = client.getCurrentRequest().equals(client.getRedirectUri());
            // Map<String, String> params = fragment ? client.getCurrentFragment() : client.getCurrentQuery();
-            // TODO:mposolda obtain params from the URL
             Map<String, String> params = null;
 
             code = params.get(OAuth2Constants.CODE);
