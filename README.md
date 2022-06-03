@@ -1,6 +1,4 @@
-# devconf2022-fapi
-
-## FAPI Demo
+# FAPI Demo
 
 This is the example application to demonstrate Keycloak FAPI 1 support. It requires to:
 - Run and setup Keycloak server on your laptop
