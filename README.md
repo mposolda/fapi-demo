@@ -9,7 +9,7 @@ This is the example application to demonstrate Keycloak FAPI 1 support. It requi
 ## Warning
 
 This application is for demonstration purposes with Keycloak integration. It is not proper implementation of FAPI relying party and
-does not do all the verifications prescribed for the client in the FAPI specifications:
+does not do all the verifications prescribed for the client application in the FAPI specifications:
 - https://openid.net/specs/openid-financial-api-part-1-1_0.html#public-client
 - https://openid.net/specs/openid-financial-api-part-2-1_0.html#confidential-client
 
@@ -99,7 +99,8 @@ cd $KEYCLOAK_HOME/bin
 ./standalone.sh -b as.keycloak-fapi.org
 ```
 
-5) 
+5) Create and configure new realm
+
 5.a) Go to `https://as.keycloak-fapi.org:8443/auth/`, create admin account, login to admin console
 
 5.b) Create realm `test` and some user in it 
@@ -133,39 +134,38 @@ cd $APP_HOME/bin
 
 1) Go to `https://app.keycloak-fapi.org:8543/fapi-demo` 
 
-2) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client
+2) No FAPI yet
 
-3) You can click `Create Login URL` and click `Login` . After user authentication, you can be redirected back to the application.
+2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client
+
+2.b) You can click `Create Login URL` and click `Login` . After user authentication, you can be redirected back to the application.
 No FAPI is involved yet. You can see that tokens don't have `nonce` claim in it.
 
-4) Fapi Baseline test
+3) Fapi Baseline test
 
-4.a) In the Keycloak admin console, in `Client Policies`, you can create create client policy with `any-client` condition and
+3.a) In the Keycloak admin console, in `Client Policies`, you can create create client policy with `any-client` condition and
 link with the built-in `fapi-1-baseline` profile.
 
-4.b) Now in the application, you can register new client. You can doublecheck in the Keycloak admin console, that it has `Consent Required` switched to ON
+3.b) Now in the application, you can register new client. You can doublecheck in the Keycloak admin console, that it has `Consent Required` switched to ON
 
-4.c) You can create login URL and login with new client. Note that to pass `fapi-1-baseline`, it is needed to check `Use Nonce param`
+3.c) You can create login URL and login with new client. Note that to pass `fapi-1-baseline`, it is needed to check `Use Nonce param`
 and `Use PKCE`. Otherwise, Keycloak won't allow login.
 
-4.d) Authentication requires user to consent. After authentication, check that tokens have `nonce` claim (Ideally you should check that it matches with the
+3.d) Authentication requires user to consent. After authentication, check that tokens have `nonce` claim (Ideally you should check that it matches with the
 `nonce` sent in the initial request)
 
-5) Fapi advanced test
+4) Fapi advanced test
 
-5.a) Change client policy from above to use `fapi-1-advanced` instead of baseline.
+4.a) Change client policy from above to use `fapi-1-advanced` instead of baseline.
 
-5.b) Register new client. It must be checked both checkboxes `Confidential client` and `Generate client keys`
+4.b) Register new client. It must be checked both checkboxes `Confidential client` and `Generate client keys`
 
-5.c) Create login URL. It must be checked with both `Use nonce` and `Use Request Object` to send stuff in signed request object.
+4.c) Create login URL. It must be checked with both `Use nonce` and `Use Request Object` to send stuff in signed request object.
 
-5.d) After authentication, you can check by `Show Last Tokens` that access token has hash of it's certificate, due Keycloak used `Sender Constrained access token`
+4.d) After authentication, you can check by `Show Last Tokens` that access token has hash of it's certificate, due Keycloak used `Sender Constrained access token`
 required by the specs.
 
 ## Contributions
 
 Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI.
 Contributions are welcome (See above for potential contributions tips :-) )
-
-
-
