@@ -16,6 +16,8 @@ public class SessionData {
 
     private KeysWrapper keys;
 
+    private String authenticationRequestUrl;
+
     private OAuthClient.AccessTokenResponse tokenResponse;
 
     public OIDCConfigurationRepresentation getAuthServerInfo() {
@@ -48,6 +50,14 @@ public class SessionData {
 
     public void setKeys(KeysWrapper keys) {
         this.keys = keys;
+    }
+
+    public String getAuthenticationRequestUrl() {
+        return authenticationRequestUrl;
+    }
+
+    public void setAuthenticationRequestUrl(String authenticationRequestUrl) {
+        this.authenticationRequestUrl = authenticationRequestUrl;
     }
 
     public OAuthClient.AccessTokenResponse getTokenResponse() {

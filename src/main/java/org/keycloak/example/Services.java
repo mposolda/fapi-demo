@@ -4,6 +4,7 @@ import org.keycloak.example.util.FreeMarkerUtil;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.OAuthClient;
 import org.keycloak.example.util.SessionData;
+import org.keycloak.example.util.WebResponse;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 
 /**
@@ -38,6 +39,8 @@ public class Services {
             synchronized (this) {
                 oauthClient = new OAuthClient();
                 oauthClient.init();
+                WebResponse<String, OIDCConfigurationRepresentation> response = oauthClient.doWellKnownRequest(MyConstants.REALM_NAME);
+                session.setAuthServerInfo(response.getResponse());
             }
         }
         return oauthClient;

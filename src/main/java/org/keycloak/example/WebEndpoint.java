@@ -2,8 +2,6 @@ package org.keycloak.example;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -11,6 +9,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -31,6 +31,7 @@ import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.Time;
 import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
+import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
@@ -48,10 +49,8 @@ import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
-import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
-import org.keycloak.services.Urls;
 import org.keycloak.util.JsonSerialization;
 
 /**
@@ -80,6 +79,7 @@ public class WebEndpoint {
     }
 
     private Response renderHtml() {
+        fmAttributes.put("serverInfo", new ServerInfoBean());
         fmAttributes.put("url", new UrlBean());
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
@@ -97,12 +97,9 @@ public class WebEndpoint {
         try {
             switch (action) {
                 case "wellknown-endpoint":
-                    OAuthClient oauthClient = Services.instance().getOauthClient();
-                    WebResponse<String, OIDCConfigurationRepresentation> response = oauthClient.doWellKnownRequest(MyConstants.REALM_NAME);
-                    session.setAuthServerInfo(response.getResponse());
-
+                    OIDCConfigurationRepresentation cfg = Services.instance().getSession().getAuthServerInfo();
                     try {
-                        fmAttributes.put("info", new InfoBean("Sent OIDC well-known request", response.getRequest(), "OIDC well-known response", JsonSerialization.writeValueAsPrettyString(response.getResponse())));
+                        fmAttributes.put("info", new InfoBean(null, null, "OIDC well-known response", JsonSerialization.writeValueAsPrettyString(cfg)));
                     } catch (IOException ioe) {
                         throw new MyException("Error when trying to deserialize OIDC well-known response to string", ioe);
                     }
@@ -153,7 +150,19 @@ public class WebEndpoint {
                     String authRequestUrl = getAuthorizationRequestUrl(pkce, nonce, requestObject);
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl, null, null));
                     fmAttributes.put("authRequestUrl", authRequestUrl);
+                    session.setAuthenticationRequestUrl(authRequestUrl);
                     break;
+                case "process-fragment":
+                    String authzResponseUrl = params.getFirst("authz-response-url");
+                    int fragmentIndex = authzResponseUrl.indexOf('#');
+                    if (fragmentIndex == -1) {
+                        throw new MyException("Fragment did not found in the URL " + authzResponseUrl);
+                    }
+                    String fragment = authzResponseUrl.substring(fragmentIndex + 1);
+                    Map<String, String> parsedParams = Stream.of(fragment.split("&")).collect(Collectors.toMap(
+                            param -> param.substring(0, param.indexOf('=')),
+                            param -> param.substring(param.indexOf('=') + 1)));
+                    return handleLoginCallback(parsedParams.get(OAuth2Constants.CODE), parsedParams.get(OAuth2Constants.ERROR), parsedParams.get(OAuth2Constants.ERROR_DESCRIPTION), authzResponseUrl);
                 case "show-last-token-response":
                     OAuthClient.AccessTokenResponse tokenResp = session.getTokenResponse();
                     if (tokenResp == null) {
@@ -203,17 +212,32 @@ public class WebEndpoint {
                                   @QueryParam(OAuth2Constants.ERROR_DESCRIPTION) String errorDescription) {
         if (code == null && error == null) {
             // Fragment response mode
+            fmAttributes.put("serverInfo", new ServerInfoBean());
             fmAttributes.put("url", new UrlBean());
             return Services.instance().getFreeMarker().processTemplate(fmAttributes, "code-parser.ftl");
         }
+        return handleLoginCallback(code, error, errorDescription, request.getUri().getRequestUri().toString());
+    }
+
+    private Response handleLoginCallback(String code, String error, String errorDescription, String origAuthzResponseUrl) {
+        SessionData session = Services.instance().getSession();
         if (error != null) {
-            fmAttributes.put("info", new InfoBean("Error!", "Error returned from Authentication response: " + error + ", Error description: " + errorDescription, null, null));
+            fmAttributes.put("info", new InfoBean("OIDC Authentication request URL sent", session.getAuthenticationRequestUrl(), "Error!", "Error returned from Authentication response: " + error + ", Error description: " + errorDescription));
         } else {
             try {
                 WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
-                fmAttributes.put("info", new InfoBean("Token request parameters", tokenResponse.getRequest().toString(),
-                        "Token response", JsonSerialization.writeValueAsPrettyString(tokenResponse.getResponse())));
-                Services.instance().getSession().setTokenResponse(tokenResponse.getResponse());
+                OIDCConfigurationRepresentation oidcConfigRep = session.getAuthServerInfo();
+
+                StringBuilder authzPart = new StringBuilder("Authentication request URL: " + session.getAuthenticationRequestUrl() + "\n\n");
+                authzPart.append("Authentication response URL: " + origAuthzResponseUrl);
+
+                StringBuilder tokenPart = new StringBuilder("Token request: " + oidcConfigRep.getTokenEndpoint() + "\n\n");
+                tokenPart.append("Token request parameters: " + tokenResponse.getRequest().toString() + "\n\n");
+                tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(tokenResponse.getResponse()));
+
+                fmAttributes.put("info", new InfoBean("OIDC Authentication request & response", authzPart.toString(),
+                        "OIDC Token request & response", tokenPart.toString()));
+                session.setTokenResponse(tokenResponse.getResponse());
             } catch (Exception me) {
                 fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details", null, null));
                 log.error(me.getMessage(), me);
@@ -308,6 +332,8 @@ public class WebEndpoint {
             JSONWebKeySet jwks = keys.getJwks();
             client.setJwks(jwks);
             Services.instance().getSession().setKeys(keys);
+        } else {
+            Services.instance().getSession().setKeys(null);
         }
         return client;
     }

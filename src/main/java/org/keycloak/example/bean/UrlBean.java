@@ -32,10 +32,6 @@ public class UrlBean {
         return baseUrl + "/login-callback";
     }
 
-    public String getClientJwksUri() {
-        return baseUrl + "/client-jwks";
-    }
-
     public String getAccountConsoleUrl() {
         return Services.instance().getOauthClient().AUTH_SERVER_ROOT + "/realms/" + MyConstants.REALM_NAME + "/account?referrer=" + baseUrl;
     }
