@@ -1,7 +1,8 @@
 package org.keycloak.example;
 
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+
+import jakarta.ws.rs.ApplicationPath;
+import jakarta.ws.rs.core.Application;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>

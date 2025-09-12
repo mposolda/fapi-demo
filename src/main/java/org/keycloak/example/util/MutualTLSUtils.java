@@ -13,11 +13,6 @@ import java.util.Enumeration;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 
 import org.apache.http.client.RedirectStrategy;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;

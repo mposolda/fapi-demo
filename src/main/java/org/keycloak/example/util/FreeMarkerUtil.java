@@ -6,16 +6,12 @@ import java.io.Writer;
 import java.net.URL;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.ws.rs.core.Response;
 
 import freemarker.cache.URLTemplateLoader;
 import freemarker.core.HTMLOutputFormat;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
-import org.keycloak.Config;
-import org.keycloak.example.Services;
+import jakarta.ws.rs.core.Response;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>

@@ -12,16 +12,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
@@ -33,6 +32,9 @@ import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
+import org.keycloak.example.oauth.AccessTokenResponse;
+import org.keycloak.example.oauth.LoginUrlBuilder;
+import org.keycloak.example.oauth.PkceGenerator;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
 import org.keycloak.example.util.MyConstants;
@@ -50,9 +52,6 @@ import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentatio
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
-import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
-import org.keycloak.testsuite.util.oauth.LoginUrlBuilder;
-import org.keycloak.testsuite.util.oauth.PkceGenerator;
 import org.keycloak.util.JsonSerialization;
 
 /**

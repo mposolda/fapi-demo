@@ -1,8 +1,8 @@
 package org.keycloak.example.util;
 
+import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
-import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>

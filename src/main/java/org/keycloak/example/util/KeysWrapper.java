@@ -6,9 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.QueryParam;
-
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.QueryParam;
 import org.keycloak.common.util.KeyUtils;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.crypto.Algorithm;

@@ -1,7 +1,6 @@
 package org.keycloak.example.util;
 
-import javax.ws.rs.core.MultivaluedMap;
-
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.keycloak.example.Services;
 
 /**
