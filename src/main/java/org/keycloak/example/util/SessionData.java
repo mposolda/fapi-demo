@@ -2,6 +2,7 @@ package org.keycloak.example.util;
 
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -18,7 +19,7 @@ public class SessionData {
 
     private String authenticationRequestUrl;
 
-    private OAuthClient.AccessTokenResponse tokenResponse;
+    private AccessTokenResponse tokenResponse;
 
     public OIDCConfigurationRepresentation getAuthServerInfo() {
         return authServerInfo;
@@ -60,11 +61,11 @@ public class SessionData {
         this.authenticationRequestUrl = authenticationRequestUrl;
     }
 
-    public OAuthClient.AccessTokenResponse getTokenResponse() {
+    public AccessTokenResponse getTokenResponse() {
         return tokenResponse;
     }
 
-    public void setTokenResponse(OAuthClient.AccessTokenResponse tokenResponse) {
+    public void setTokenResponse(AccessTokenResponse tokenResponse) {
         this.tokenResponse = tokenResponse;
     }
 }

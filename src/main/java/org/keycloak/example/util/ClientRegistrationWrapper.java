@@ -19,7 +19,7 @@ public class ClientRegistrationWrapper {
 
     public static ClientRegistrationWrapper create() {
         ClientRegistration reg = ClientRegistration.create()
-                .url(Services.instance().getOauthClient().AUTH_SERVER_ROOT, MyConstants.REALM_NAME)
+                .url(MyConstants.SERVER_ROOT, MyConstants.REALM_NAME)
                 .httpClient(MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore())
                 .build();
         return new ClientRegistrationWrapper(reg);

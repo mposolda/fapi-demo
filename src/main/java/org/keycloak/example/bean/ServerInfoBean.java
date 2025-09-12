@@ -1,6 +1,5 @@
 package org.keycloak.example.bean;
 
-import org.keycloak.example.Services;
 import org.keycloak.example.util.MyConstants;
 
 /**
@@ -11,7 +10,7 @@ import org.keycloak.example.util.MyConstants;
 public class ServerInfoBean {
 
     public String getAuthServerInfo() {
-        return Services.instance().getOauthClient().AUTH_SERVER_ROOT;
+        return MyConstants.SERVER_ROOT;
     }
 
     public String getRealmName() {

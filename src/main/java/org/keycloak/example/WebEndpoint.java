@@ -22,12 +22,12 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
-import org.apache.http.NameValuePair;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.Base64Url;
+import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.common.util.Time;
 import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
@@ -35,7 +35,6 @@ import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
-import org.keycloak.example.util.MutualTLSUtils;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.MyException;
 import org.keycloak.example.util.OAuthClient;
@@ -51,6 +50,9 @@ import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentatio
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.testsuite.util.oauth.AccessTokenResponse;
+import org.keycloak.testsuite.util.oauth.LoginUrlBuilder;
+import org.keycloak.testsuite.util.oauth.PkceGenerator;
 import org.keycloak.util.JsonSerialization;
 
 /**
@@ -164,7 +166,7 @@ public class WebEndpoint {
                             param -> param.substring(param.indexOf('=') + 1)));
                     return handleLoginCallback(parsedParams.get(OAuth2Constants.CODE), parsedParams.get(OAuth2Constants.ERROR), parsedParams.get(OAuth2Constants.ERROR_DESCRIPTION), authzResponseUrl);
                 case "show-last-token-response":
-                    OAuthClient.AccessTokenResponse tokenResp = session.getTokenResponse();
+                    AccessTokenResponse tokenResp = session.getTokenResponse();
                     if (tokenResp == null) {
                         fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
                     } else {
@@ -176,7 +178,7 @@ public class WebEndpoint {
                     }
                     break;
                 case "show-last-tokens":
-                    OAuthClient.AccessTokenResponse tokenRespp = session.getTokenResponse();
+                    AccessTokenResponse tokenRespp = session.getTokenResponse();
                     if (tokenRespp == null) {
                         fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
                     } else {
@@ -225,19 +227,21 @@ public class WebEndpoint {
             fmAttributes.put("info", new InfoBean("OIDC Authentication request URL sent", session.getAuthenticationRequestUrl(), "Error!", "Error returned from Authentication response: " + error + ", Error description: " + errorDescription));
         } else {
             try {
-                WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
+                // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
+                AccessTokenResponse response = Services.instance().getOauthClient().doAccessTokenRequest(code);
                 OIDCConfigurationRepresentation oidcConfigRep = session.getAuthServerInfo();
 
                 StringBuilder authzPart = new StringBuilder("Authentication request URL: " + session.getAuthenticationRequestUrl() + "\n\n");
                 authzPart.append("Authentication response URL: " + origAuthzResponseUrl);
 
                 StringBuilder tokenPart = new StringBuilder("Token request: " + oidcConfigRep.getTokenEndpoint() + "\n\n");
-                tokenPart.append("Token request parameters: " + tokenResponse.getRequest().toString() + "\n\n");
-                tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(tokenResponse.getResponse()));
+//                tokenPart.append("Token request parameters: " + tokenResponse.getRequest().toString() + "\n\n"); // TODO:mposolda figure how to login token-request
+                tokenPart.append("Token request parameters: TODO\n\n");
+                tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(response));
 
                 fmAttributes.put("info", new InfoBean("OIDC Authentication request & response", authzPart.toString(),
                         "OIDC Token request & response", tokenPart.toString()));
-                session.setTokenResponse(tokenResponse.getResponse());
+                session.setTokenResponse(response);
             } catch (Exception me) {
                 fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details", null, null));
                 log.error(me.getMessage(), me);
@@ -263,39 +267,41 @@ public class WebEndpoint {
                 throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
             }
             String request = keys.getOidcRequest(requestObject, Services.instance().getSession().getRegisteredClient().getRequestObjectSigningAlg());
-            oauthClient.clientId(oidcClient.getClientId());
-            oauthClient.request(request);
-            oauthClient.nonce(null);
-            oauthClient.stateParamHardcoded(null);
-            oauthClient.redirectUri(null);
-            oauthClient.responseType(null);
+            oauthClient.client(oidcClient.getClientId());
+            return oauthClient.redirectUri(null)
+                    .responseType(null)
+                    .loginForm()
+                        .request(request)
+                        .nonce(null)
+                        .state(null)
+                    //.responseType(null);
             // oauthClient.responseMode("query");
-            return oauthClient.getLoginFormUrl();
+                        .build();
         } else {
-            oauthClient.clientId(oidcClient.getClientId());
-            oauthClient.responseType(OAuth2Constants.CODE);
-            oauthClient.redirectUri(oidcClient.getRedirectUris().get(0));
-            oauthClient.stateParamRandom();
-            oauthClient.request(null);
-
+            LoginUrlBuilder loginUrl = oauthClient.client(oidcClient.getClientId())
+                .responseType(OAuth2Constants.CODE)
+                .redirectUri(oidcClient.getRedirectUris().get(0))
+                    .loginForm()
+                        .state(SecretGenerator.getInstance().generateSecureID())
+                        .request(null);
             if (pkce) {
-                String codeVerifier = UUIDUtil.generateId() + UUIDUtil.generateId();
+                String codeVerifier = UUIDUtil.generateId() + UUIDUtil.generateId(); // TODO:mposolda can use SecretGenerator instead?
                 String codeChallenge = generateS256CodeChallenge(codeVerifier);
-                oauthClient.codeChallenge(codeChallenge);
-                oauthClient.codeChallengeMethod(OAuth2Constants.PKCE_METHOD_S256);
-                oauthClient.codeVerifier(codeVerifier);
+                loginUrl.codeChallenge(PkceGenerator.s256());
+//                oauthClient.codeChallengeMethod(OAuth2Constants.PKCE_METHOD_S256);
+//                oauthClient.codeVerifier(codeVerifier);
             } else {
-                oauthClient.codeVerifier(null);
-                oauthClient.codeChallenge(null);
-                oauthClient.codeChallengeMethod(null);
+                loginUrl.codeChallenge(null, null);
+//                oauthClient.codeChallenge(null);
+//                oauthClient.codeChallengeMethod(null);
             }
 
             if (nonce) {
-                oauthClient.nonce(UUIDUtil.generateId());
+                loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
             } else {
-                oauthClient.nonce(null);
+                loginUrl.nonce(null);
             }
-            return oauthClient.getLoginFormUrl();
+            return loginUrl.build();
         }
     }
 

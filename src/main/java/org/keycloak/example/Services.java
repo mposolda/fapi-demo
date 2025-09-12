@@ -1,11 +1,13 @@
 package org.keycloak.example;
 
 import org.keycloak.example.util.FreeMarkerUtil;
+import org.keycloak.example.util.MutualTLSUtils;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.OAuthClient;
 import org.keycloak.example.util.SessionData;
-import org.keycloak.example.util.WebResponse;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
+
+import static org.keycloak.example.util.MyConstants.SERVER_ROOT;
 
 /**
  * Application-scoped stuff
@@ -37,10 +39,12 @@ public class Services {
     public OAuthClient getOauthClient() {
         if (oauthClient == null) {
             synchronized (this) {
-                oauthClient = new OAuthClient();
-                oauthClient.init();
-                WebResponse<String, OIDCConfigurationRepresentation> response = oauthClient.doWellKnownRequest(MyConstants.REALM_NAME);
-                session.setAuthServerInfo(response.getResponse());
+                oauthClient = new OAuthClient(SERVER_ROOT, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
+//                oauthClient.init();
+                OIDCConfigurationRepresentation response = oauthClient.
+                        realm(MyConstants.REALM_NAME)
+                        .doWellKnownRequest();
+                session.setAuthServerInfo(response);
             }
         }
         return oauthClient;

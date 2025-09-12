@@ -33,6 +33,6 @@ public class UrlBean {
     }
 
     public String getAccountConsoleUrl() {
-        return Services.instance().getOauthClient().AUTH_SERVER_ROOT + "/realms/" + MyConstants.REALM_NAME + "/account?referrer=" + baseUrl;
+        return MyConstants.SERVER_ROOT + "/realms/" + MyConstants.REALM_NAME + "/account?referrer=" + baseUrl;
     }
 }
