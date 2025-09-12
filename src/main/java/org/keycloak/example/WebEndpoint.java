@@ -7,7 +7,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,6 +31,7 @@ import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
+import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.example.oauth.LoginUrlBuilder;
 import org.keycloak.example.oauth.PkceGenerator;
@@ -44,7 +44,7 @@ import org.keycloak.example.util.OIDCLoginProtocol;
 import org.keycloak.example.util.ReqParams;
 import org.keycloak.example.util.SessionData;
 import org.keycloak.example.util.UUIDUtil;
-import org.keycloak.example.util.WebResponse;
+import org.keycloak.example.util.WebRequestContext;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
@@ -119,7 +119,7 @@ public class WebEndpoint {
                     boolean generateJwks = params.getFirst("jwks") != null;
                     OIDCClientRepresentation oidcClient = createClientToRegister(confidentialClient, generateJwks);
                     try {
-                        WebResponse<OIDCClientRepresentation, OIDCClientRepresentation> res = clientReg.registerClient(oidcClient);
+                        WebRequestContext<OIDCClientRepresentation, OIDCClientRepresentation> res = clientReg.registerClient(oidcClient);
                         session.setRegisteredClient(res.getResponse());
 
                         fmAttributes.put("info", new InfoBean("Client Registration Request", JsonSerialization.writeValueAsPrettyString(res.getRequest()),
@@ -165,25 +165,27 @@ public class WebEndpoint {
                             param -> param.substring(param.indexOf('=') + 1)));
                     return handleLoginCallback(parsedParams.get(OAuth2Constants.CODE), parsedParams.get(OAuth2Constants.ERROR), parsedParams.get(OAuth2Constants.ERROR_DESCRIPTION), authzResponseUrl);
                 case "show-last-token-response":
-                    AccessTokenResponse tokenResp = session.getTokenResponse();
+                    WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenResp = session.getTokenRequestCtx();
                     if (tokenResp == null) {
                         fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
-                            fmAttributes.put("info", new InfoBean(null, null, "Last Token Response", JsonSerialization.writeValueAsPrettyString(tokenResp)));
+                            fmAttributes.put("info", new InfoBean(null, null, "Last Token Request & Response",
+                                    renderTokenRequestAndResponse(tokenResp.getRequest(), tokenResp.getResponse()).toString()));
                         } catch (IOException ioe) {
                             throw new MyException("Error when trying to deserialize OIDC registered client", ioe);
                         }
                     }
                     break;
                 case "show-last-tokens":
-                    AccessTokenResponse tokenRespp = session.getTokenResponse();
+                    WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRespp = session.getTokenRequestCtx();
                     if (tokenRespp == null) {
                         fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
-                            IDToken idToken = new JWSInput(tokenRespp.getIdToken()).readJsonContent(IDToken.class);
-                            AccessToken accessToken = new JWSInput(tokenRespp.getAccessToken()).readJsonContent(AccessToken.class);
+                            AccessTokenResponse atr = tokenRespp.getResponse();
+                            IDToken idToken = new JWSInput(atr.getIdToken()).readJsonContent(IDToken.class);
+                            AccessToken accessToken = new JWSInput(atr.getAccessToken()).readJsonContent(AccessToken.class);
                             fmAttributes.put("info", new InfoBean("Last ID Token", JsonSerialization.writeValueAsPrettyString(idToken),
                                     "Last Access Token", JsonSerialization.writeValueAsPrettyString(accessToken)));
                         } catch (IOException | JWSInputException ioe) {
@@ -227,20 +229,17 @@ public class WebEndpoint {
         } else {
             try {
                 // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
-                AccessTokenResponse response = Services.instance().getOauthClient().doAccessTokenRequest(code);
-                OIDCConfigurationRepresentation oidcConfigRep = session.getAuthServerInfo();
+                AccessTokenRequest tokenRequest = Services.instance().getOauthClient().accessTokenRequest(code);
+                AccessTokenResponse tokenResponse = tokenRequest.send();
 
                 StringBuilder authzPart = new StringBuilder("Authentication request URL: " + session.getAuthenticationRequestUrl() + "\n\n");
                 authzPart.append("Authentication response URL: " + origAuthzResponseUrl);
 
-                StringBuilder tokenPart = new StringBuilder("Token request: " + oidcConfigRep.getTokenEndpoint() + "\n\n");
-//                tokenPart.append("Token request parameters: " + tokenResponse.getRequest().toString() + "\n\n"); // TODO:mposolda figure how to login token-request
-                tokenPart.append("Token request parameters: TODO\n\n");
-                tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(response));
+                StringBuilder tokenPart = renderTokenRequestAndResponse(tokenRequest, tokenResponse);
 
                 fmAttributes.put("info", new InfoBean("OIDC Authentication request & response", authzPart.toString(),
                         "OIDC Token request & response", tokenPart.toString()));
-                session.setTokenResponse(response);
+                session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
             } catch (Exception me) {
                 fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details", null, null));
                 log.error(me.getMessage(), me);
@@ -248,6 +247,12 @@ public class WebEndpoint {
         }
         fmAttributes.put("reqParams", new ReqParams(null));
         return renderHtml();
+    }
+
+    private StringBuilder renderTokenRequestAndResponse(AccessTokenRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
+        StringBuilder tokenPart = new StringBuilder("Token request: " +  JsonSerialization.writeValueAsPrettyString(tokenRequest.getRequestInfo()) + "\n\n");
+        tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(tokenResponse));
+        return tokenPart;
     }
 
 

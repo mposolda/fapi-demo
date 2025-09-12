@@ -32,6 +32,17 @@ This is tested with OpenJDK 8 and Maven 3.6.3
 
 ## Start and prepare keycloak
 
+This was tested with OpenJDK 21 and Keycloak nightly distribution (before 26.4.0 release) 
+
+1) Copy `keystores/keycloak.jks` to the `$KEYCLOAK_HOME/bin` 
+
+2) Start the server (but not sure if it is complete...)
+```
+/kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret
+```
+
+OUTDATED instructions for Keycloak on Wildfly (TODO: Remove them...)
+
 This was tested with OpenJDK 8 and Keycloak 18.0.0 legacy distribution based on Wildfly.
 ( NOTE: Contribution welcome to replace this with Keycloak + Quarkus based dist. )
 
@@ -109,7 +120,7 @@ later use in the demo
 
 ## Start example app and deploy the example
 
-1) Unzip Wildlfy 23.0.2 to some directory. Will be referred as `$APP_HOME`
+1) Unzip Wildlfy 33.0.1 to some directory. Will be referred as `$APP_HOME`
 
 2) Copy keystore and truststore:
 ```

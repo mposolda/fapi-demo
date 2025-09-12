@@ -1,5 +1,7 @@
 package org.keycloak.example.util;
 
+import org.keycloak.example.Services;
+import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
@@ -9,8 +11,6 @@ import org.keycloak.representations.oidc.OIDCClientRepresentation;
  */
 public class SessionData {
 
-    private OIDCConfigurationRepresentation authServerInfo;
-
     private String initToken;
 
     private OIDCClientRepresentation registeredClient;
@@ -19,14 +19,12 @@ public class SessionData {
 
     private String authenticationRequestUrl;
 
-    private AccessTokenResponse tokenResponse;
+    private WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx;
 
     public OIDCConfigurationRepresentation getAuthServerInfo() {
-        return authServerInfo;
-    }
-
-    public void setAuthServerInfo(OIDCConfigurationRepresentation authServerInfo) {
-        this.authServerInfo = authServerInfo;
+        return Services.instance().getOauthClient().
+                realm(MyConstants.REALM_NAME)
+                .doWellKnownRequest();
     }
 
     public String getInitToken() {
@@ -61,11 +59,11 @@ public class SessionData {
         this.authenticationRequestUrl = authenticationRequestUrl;
     }
 
-    public AccessTokenResponse getTokenResponse() {
-        return tokenResponse;
+    public WebRequestContext<AccessTokenRequest, AccessTokenResponse> getTokenRequestCtx() {
+        return tokenRequestCtx;
     }
 
-    public void setTokenResponse(AccessTokenResponse tokenResponse) {
-        this.tokenResponse = tokenResponse;
+    public void setTokenRequestCtx(WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx) {
+        this.tokenRequestCtx = tokenRequestCtx;
     }
 }

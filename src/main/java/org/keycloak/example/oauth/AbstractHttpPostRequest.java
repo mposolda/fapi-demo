@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class AbstractHttpPostRequest<T, R> {
 
@@ -132,4 +133,12 @@ public abstract class AbstractHttpPostRequest<T, R> {
         return (T) this;
     }
 
+
+    public Map<String, Object> getRequestInfo() {
+        Map<String, Object> request = new HashMap<>();
+        request.put("endpoint", getEndpoint());
+        request.put("Headers", this.headers);
+        request.put("Params", this.parameters.stream().collect(Collectors.toMap(nvp -> nvp.getName(), nvp -> nvp.getValue())));
+        return request;
+    }
 }

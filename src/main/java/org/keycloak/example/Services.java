@@ -39,12 +39,9 @@ public class Services {
     public OAuthClient getOauthClient() {
         if (oauthClient == null) {
             synchronized (this) {
-                oauthClient = new OAuthClient(SERVER_ROOT, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
+                oauthClient = new OAuthClient(SERVER_ROOT, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore())
+                        .realm(MyConstants.REALM_NAME);
 //                oauthClient.init();
-                OIDCConfigurationRepresentation response = oauthClient.
-                        realm(MyConstants.REALM_NAME)
-                        .doWellKnownRequest();
-                session.setAuthServerInfo(response);
             }
         }
         return oauthClient;
