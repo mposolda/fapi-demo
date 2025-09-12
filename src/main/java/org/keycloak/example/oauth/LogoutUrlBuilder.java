@@ -1,7 +1,7 @@
 package org.keycloak.example.oauth;
 
-import org.keycloak.protocol.oidc.OIDCLoginProtocol;
-import org.keycloak.services.managers.AuthenticationManager;
+import org.keycloak.OAuth2Constants;
+import org.keycloak.example.util.OIDCLoginProtocol;
 
 public class LogoutUrlBuilder extends AbstractUrlBuilder {
 
@@ -20,7 +20,7 @@ public class LogoutUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LogoutUrlBuilder idTokenHint(String idTokenHint) {
-        parameter(OIDCLoginProtocol.ID_TOKEN_HINT, idTokenHint);
+        parameter(OAuth2Constants.ID_TOKEN_HINT, idTokenHint);
         return this;
     }
 
@@ -30,22 +30,22 @@ public class LogoutUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LogoutUrlBuilder state(String state) {
-        parameter(OIDCLoginProtocol.STATE_PARAM, state);
+        parameter(OAuth2Constants.STATE, state);
         return this;
     }
 
     public LogoutUrlBuilder uiLocales(String uiLocales) {
-        parameter(OIDCLoginProtocol.UI_LOCALES_PARAM, uiLocales);
+        parameter(OAuth2Constants.UI_LOCALES_PARAM, uiLocales);
         return this;
     }
 
-    public LogoutUrlBuilder initiatingIdp(String initiatingIdp) {
-        parameter(AuthenticationManager.INITIATING_IDP_PARAM, initiatingIdp);
-        return this;
-    }
+//    public LogoutUrlBuilder initiatingIdp(String initiatingIdp) {
+//        parameter(AuthenticationManager.INITIATING_IDP_PARAM, initiatingIdp);
+//        return this;
+//    }
 
     public LogoutUrlBuilder withClientId() {
-        parameter(OIDCLoginProtocol.CLIENT_ID_PARAM, client.config().getClientId());
+        parameter(OAuth2Constants.CLIENT_ID, client.config().getClientId());
         return this;
     }
 

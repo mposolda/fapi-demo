@@ -6,8 +6,8 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicNameValuePair;
 import org.keycloak.OAuth2Constants;
+import org.keycloak.example.util.MediaType;
 import org.keycloak.util.BasicAuthHelper;
-import org.keycloak.utils.MediaType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

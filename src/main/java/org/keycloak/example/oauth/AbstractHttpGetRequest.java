@@ -2,7 +2,7 @@ package org.keycloak.example.oauth;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.keycloak.utils.MediaType;
+import org.keycloak.example.util.MediaType;
 
 import java.io.IOException;
 

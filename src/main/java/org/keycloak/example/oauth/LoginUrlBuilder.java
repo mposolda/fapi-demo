@@ -1,8 +1,7 @@
 package org.keycloak.example.oauth;
 
 import org.keycloak.OAuth2Constants;
-import org.keycloak.models.Constants;
-import org.keycloak.protocol.oidc.OIDCLoginProtocol;
+import org.keycloak.example.util.Constants;
 import org.keycloak.representations.ClaimsRepresentation;
 
 public class LoginUrlBuilder extends AbstractUrlBuilder {
@@ -22,22 +21,22 @@ public class LoginUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LoginUrlBuilder state(String state) {
-        parameter(OIDCLoginProtocol.STATE_PARAM, state);
+        parameter(OAuth2Constants.STATE, state);
         return this;
     }
 
     public LoginUrlBuilder nonce(String nonce) {
-        parameter(OIDCLoginProtocol.NONCE_PARAM, nonce);
+        parameter("nonce", nonce);
         return this;
     }
 
     public LoginUrlBuilder prompt(String prompt) {
-        parameter(OIDCLoginProtocol.PROMPT_PARAM, prompt);
+        parameter(OAuth2Constants.PROMPT, prompt);
         return this;
     }
 
     public LoginUrlBuilder loginHint(String loginHint) {
-        parameter(OIDCLoginProtocol.LOGIN_HINT_PARAM, loginHint);
+        parameter("login_hint", loginHint);
         return this;
     }
 
@@ -47,7 +46,7 @@ public class LoginUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LoginUrlBuilder maxAge(int maxAge) {
-        parameter(OIDCLoginProtocol.MAX_AGE_PARAM, Integer.toString(maxAge));
+        parameter(OAuth2Constants.MAX_AGE, Integer.toString(maxAge));
         return this;
     }
 
@@ -70,29 +69,29 @@ public class LoginUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LoginUrlBuilder dpopJkt(String dpopJkt) {
-        parameter(OIDCLoginProtocol.DPOP_JKT, dpopJkt);
+        parameter(Constants.DPOP_JKT, dpopJkt);
         return this;
     }
 
     public LoginUrlBuilder claims(ClaimsRepresentation claims) {
-        parameter(OIDCLoginProtocol.CLAIMS_PARAM, claims);
+        parameter(Constants.CLAIMS, claims);
         return this;
     }
 
     public LoginUrlBuilder request(String request) {
-        parameter(OIDCLoginProtocol.REQUEST_PARAM, request);
+        parameter(Constants.REQUEST, request);
         return this;
     }
 
     public LoginUrlBuilder requestUri(String requestUri) {
-        parameter(OIDCLoginProtocol.REQUEST_URI_PARAM, requestUri);
+        parameter(Constants.REQUEST_URI, requestUri);
         return this;
     }
 
     @Override
     protected void initRequest() {
         parameter(OAuth2Constants.RESPONSE_TYPE, client.config().getResponseType());
-        parameter(OIDCLoginProtocol.RESPONSE_MODE_PARAM, client.config().getResponseMode());
+        parameter(Constants.RESPONSE_MODE, client.config().getResponseMode());
         parameter(OAuth2Constants.CLIENT_ID, client.config().getClientId());
         parameter(OAuth2Constants.REDIRECT_URI, client.config().getRedirectUri());
 
