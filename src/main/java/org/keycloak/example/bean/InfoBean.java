@@ -1,35 +1,44 @@
 package org.keycloak.example.bean;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
 public class InfoBean {
 
-    private final String out1Title;
-    private final String out2Title;
-    private final String out1;
-    private final String out2;
+    // Key is title, value is text-area
+    private final List<Out> outs = new ArrayList<>();
 
-    public InfoBean(String out1Title, String out1, String out2Title, String out2) {
-        this.out1Title = out1Title;
-        this.out1 = out1;
-        this.out2Title = out2Title;
-        this.out2 = out2;
+    public InfoBean(String... infos) {
+        for (int i = 0 ; i < infos.length ; i = i+2) {
+            String key = infos[i];
+            String value = infos[i + 1];
+            outs.add(new Out(key, value));
+        }
     }
 
-    public String getOut1Title() {
-        return out1Title;
+    public List<Out> getOuts() {
+        return outs;
     }
 
-    public String getOut2Title() {
-        return out2Title;
-    }
+    public static class Out {
 
-    public String getOut1() {
-        return out1;
-    }
+        private final String title;
+        private final String content;
 
-    public String getOut2() {
-        return out2;
+        public Out(String title, String textArea) {
+            this.title = title;
+            this.content = textArea;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getContent() {
+            return content;
+        }
     }
 }

@@ -72,7 +72,7 @@ public class WebEndpoint {
     @Produces("text/html")
     @NoCache
     public Response getWebPage() {
-        fmAttributes.put("info", new InfoBean(null, null, null, null));
+        fmAttributes.put("info", new InfoBean());
         return renderHtml();
     }
 
@@ -98,7 +98,7 @@ public class WebEndpoint {
                 case "wellknown-endpoint":
                     OIDCConfigurationRepresentation cfg = Services.instance().getSession().getAuthServerInfo();
                     try {
-                        fmAttributes.put("info", new InfoBean(null, null, "OIDC well-known response", JsonSerialization.writeValueAsPrettyString(cfg)));
+                        fmAttributes.put("info", new InfoBean("OIDC well-known response", JsonSerialization.writeValueAsPrettyString(cfg)));
                     } catch (IOException ioe) {
                         throw new MyException("Error when trying to deserialize OIDC well-known response to string", ioe);
                     }
@@ -132,10 +132,10 @@ public class WebEndpoint {
                 case "show-registered-client":
                     OIDCClientRepresentation client = session.getRegisteredClient();
                     if (client == null) {
-                        fmAttributes.put("info", new InfoBean(null,null, "No Registered client", "No client registered"));
+                        fmAttributes.put("info", new InfoBean("No Registered client", "No client registered"));
                     } else {
                         try {
-                            fmAttributes.put("info", new InfoBean(null, null, "Last Registered client", JsonSerialization.writeValueAsPrettyString(client)));
+                            fmAttributes.put("info", new InfoBean("Last Registered client", JsonSerialization.writeValueAsPrettyString(client)));
                         } catch (IOException ioe) {
                             throw new MyException("Error when trying to deserialize OIDC registered client", ioe);
                         }
@@ -146,7 +146,7 @@ public class WebEndpoint {
                     OIDCFlowConfigContext oidcFlowCtx = collectOIDCFlowConfigParams(params, session);
 
                     String authRequestUrl = getAuthorizationRequestUrl(oidcFlowCtx);
-                    fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl, null, null));
+                    fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl));
                     fmAttributes.put("authRequestUrl", authRequestUrl);
                     session.setAuthenticationRequestUrl(authRequestUrl);
                     break;
@@ -164,10 +164,10 @@ public class WebEndpoint {
                 case "show-last-token-response":
                     WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenResp = session.getTokenRequestCtx();
                     if (tokenResp == null) {
-                        fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
+                        fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
-                            fmAttributes.put("info", new InfoBean(null, null, "Last Token Request & Response",
+                            fmAttributes.put("info", new InfoBean("Last Token Request & Response",
                                     renderTokenRequestAndResponse(tokenResp.getRequest(), tokenResp.getResponse()).toString()));
                         } catch (IOException ioe) {
                             throw new MyException("Error when trying to deserialize OIDC registered client", ioe);
@@ -177,7 +177,7 @@ public class WebEndpoint {
                 case "show-last-tokens":
                     WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRespp = session.getTokenRequestCtx();
                     if (tokenRespp == null) {
-                        fmAttributes.put("info", new InfoBean(null,null, "No Token Response", "No token response yet. Please login first."));
+                        fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
                             AccessTokenResponse atr = tokenRespp.getResponse();
@@ -194,7 +194,7 @@ public class WebEndpoint {
                     throw new MyException("Illegal action");
             }
         } catch (MyException me) {
-            fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details", null, null));
+            fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details"));
             log.error(me.getMessage(), me);
         }
 
@@ -260,7 +260,7 @@ public class WebEndpoint {
                         "OIDC Token request & response", tokenPart.toString()));
                 session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
             } catch (Exception me) {
-                fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details", null, null));
+                fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details"));
                 log.error(me.getMessage(), me);
             }
         }

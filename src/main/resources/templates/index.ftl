@@ -87,16 +87,17 @@
 
 <hr />
 
-<h3>${info.out1Title!}</h3>
-<pre style="background-color: #ddd; border: 1px solid #ccc; padding: 10px; word-wrap: break-word; white-space: pre-wrap;" id="output">${info.out1!}</pre>
+<#if info??>
+    <#list info.outs as out>
+        <h3>${out.title!}</h3>
+        <pre style="background-color: #ddd; border: 1px solid #ccc; padding: 10px; word-wrap: break-word; white-space: pre-wrap;" id="output">${out.content!}</pre>
+        <hr />
+    </#list>
+</#if>
 
 <#if authRequestUrl??>
     <a href="${authRequestUrl}">Login</a>
 </#if>
-<hr />
-
-<h3>${info.out2Title!}</h3>
-<pre style="background-color: #ddd; border: 1px solid #ccc; padding: 10px; word-wrap: break-word; white-space: pre-wrap;" id="events">${info.out2!}</pre>
 
 <script>
 
