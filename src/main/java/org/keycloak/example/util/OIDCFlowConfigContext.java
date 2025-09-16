@@ -18,19 +18,19 @@ public class OIDCFlowConfigContext {
     }
 
 
-    public boolean usePkce() {
+    public boolean isUsePkce() {
         return usePkce;
     }
 
-    public boolean useNonce() {
+    public boolean isUseNonce() {
         return useNonce;
     }
 
-    public boolean useRequestObject() {
+    public boolean isUseRequestObject() {
         return useRequestObject;
     }
 
-    public boolean useDPoP() {
+    public boolean isUseDPoP() {
         return useDPoP;
     }
 }

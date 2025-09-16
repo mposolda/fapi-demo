@@ -11,7 +11,7 @@ import org.keycloak.representations.oidc.OIDCClientRepresentation;
  */
 public class SessionData {
 
-    private String initToken;
+    private ClientConfigContext clientConfigContext = new ClientConfigContext(null);
 
     private OIDCClientRepresentation registeredClient;
 
@@ -21,7 +21,7 @@ public class SessionData {
 
     private WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx;
 
-    private OIDCFlowConfigContext oidcFlowConfigContext;
+    private OIDCFlowConfigContext oidcFlowConfigContext = new OIDCFlowConfigContext(false, false, false, false);
 
     private DPoPContext dpopContext;
 
@@ -31,12 +31,12 @@ public class SessionData {
                 .doWellKnownRequest();
     }
 
-    public String getInitToken() {
-        return initToken;
+    public ClientConfigContext getClientConfigContext() {
+        return clientConfigContext;
     }
 
-    public void setInitToken(String initToken) {
-        this.initToken = initToken;
+    public void setClientConfigContext(ClientConfigContext clientConfigContext) {
+        this.clientConfigContext = clientConfigContext;
     }
 
     public OIDCClientRepresentation getRegisteredClient() {
@@ -71,7 +71,7 @@ public class SessionData {
         this.tokenRequestCtx = tokenRequestCtx;
     }
 
-    public OIDCFlowConfigContext getOidcFlowContext() {
+    public OIDCFlowConfigContext getOidcConfigContext() {
         return oidcFlowConfigContext;
     }
 

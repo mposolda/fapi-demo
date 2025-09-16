@@ -14,7 +14,7 @@
 
     <div>
         <table>
-            <tr><td>Init token: </td><td><input id="init-token" name="init-token" value="${reqParams.initToken!}"></td></td></tr>
+            <tr><td>Init token: </td><td><input id="init-token" name="init-token" value="${clientConfigCtx.initialAccessToken!}"></td></td></tr>
             <tr><td>Confidential client: </td><td><input id="confidential-client" name="confidential-client" type="checkbox"></td></td></tr>
             <tr><td>Generate client keys: </td><td><input id="jwks" name="jwks" type="checkbox"></td></td></tr>
         </table>
@@ -33,10 +33,41 @@
 
     <div>
         <table>
-            <tr><td>Use PKCE: </td><td><input id="pkce" name="pkce" type="checkbox"></td></td></tr>
-            <tr><td>Use Nonce parameter: </td><td><input id="nonce" name="nonce" type="checkbox"></td></td></tr>
-            <tr><td>Use Request object: </td><td><input id="request-object" name="request-object" type="checkbox"></td></td></tr>
-            <tr><td>Use DPoP: </td><td><input id="dpop" name="dpop" type="checkbox"></td></td></tr>
+            <tr>
+                <td>Use PKCE: </td><td>
+                <#if oidcConfigCtx.usePkce>
+                    <input id="pkce" name="pkce" type="checkbox" checked>
+                <#else>
+                    <input id="pkce" name="pkce" type="checkbox">
+                </#if>
+                </td></td>
+            </tr>
+            <tr>
+                <td>Use Nonce parameter: </td><td>
+                <#if oidcConfigCtx.useNonce>
+                    <input id="nonce" name="nonce" type="checkbox" checked>
+                <#else>
+                    <input id="nonce" name="nonce" type="checkbox">
+                </#if>
+            </td></td></tr>
+            <tr>
+                <td>Use Request object: </td><td>
+                <#if oidcConfigCtx.useRequestObject>
+                    <input id="request-object" name="request-object" type="checkbox" checked>
+                <#else>
+                    <input id="request-object" name="request-object" type="checkbox">
+                </#if>
+                </td></td>
+            </tr>
+            <tr>
+                <td>Use DPoP: </td><td>
+                <#if oidcConfigCtx.useDPoP>
+                    <input id="dpop" name="dpop" type="checkbox" checked>
+                <#else>
+                    <input id="dpop" name="dpop" type="checkbox">
+                </#if>
+                </td></td>
+            </tr>
         </table>
     </div>
     <br />

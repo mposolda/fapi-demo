@@ -32,6 +32,7 @@ import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.example.oauth.LoginUrlBuilder;
 import org.keycloak.example.oauth.PkceGenerator;
+import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
 import org.keycloak.example.util.MyConstants;
@@ -39,7 +40,6 @@ import org.keycloak.example.util.MyException;
 import org.keycloak.example.util.OAuthClient;
 import org.keycloak.example.util.OIDCFlowConfigContext;
 import org.keycloak.example.util.OIDCLoginProtocol;
-import org.keycloak.example.util.ReqParams;
 import org.keycloak.example.util.SessionData;
 import org.keycloak.example.util.UUIDUtil;
 import org.keycloak.example.util.WebRequestContext;
@@ -73,13 +73,14 @@ public class WebEndpoint {
     @NoCache
     public Response getWebPage() {
         fmAttributes.put("info", new InfoBean(null, null, null, null));
-        fmAttributes.put("reqParams", new ReqParams(null));
         return renderHtml();
     }
 
     private Response renderHtml() {
         fmAttributes.put("serverInfo", new ServerInfoBean());
         fmAttributes.put("url", new UrlBean());
+        fmAttributes.put("clientConfigCtx", Services.instance().getSession().getClientConfigContext());
+        fmAttributes.put("oidcConfigCtx", Services.instance().getSession().getOidcConfigContext());
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 
@@ -91,7 +92,6 @@ public class WebEndpoint {
     public Response processAction() {
         MultivaluedMap<String, String> params = request.getDecodedFormParameters();
         String action = params.getFirst("my-action");
-        fmAttributes.put("reqParams", new ReqParams(params));
         SessionData session = Services.instance().getSession();
         try {
             switch (action) {
@@ -105,8 +105,8 @@ public class WebEndpoint {
                     break;
 
                 case "register-client":
-                    String initToken = params.getFirst("init-token");
-                    session.setInitToken(initToken);
+                    ClientConfigContext clientCtx = collectClientConfigParams(params, session);
+                    String initToken = clientCtx.getInitialAccessToken();
                     if (initToken == null || initToken.trim().isEmpty()) {
                         throw new MyException("Init token is missing. It is required when registering client. Please obtain init token from Keycloak admin console and try again");
                     }
@@ -143,12 +143,7 @@ public class WebEndpoint {
 
                     break;
                 case "create-login-url":
-                    boolean pkce = params.getFirst("pkce") != null;
-                    boolean nonce = params.getFirst("nonce") != null;
-                    boolean requestObject = params.getFirst("request-object") != null;
-                    boolean useDPoP = params.getFirst("dpop") != null;
-                    OIDCFlowConfigContext oidcFlowCtx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP);
-                    session.setOidcFlowContext(oidcFlowCtx);
+                    OIDCFlowConfigContext oidcFlowCtx = collectOIDCFlowConfigParams(params, session);
 
                     String authRequestUrl = getAuthorizationRequestUrl(oidcFlowCtx);
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl, null, null));
@@ -206,6 +201,23 @@ public class WebEndpoint {
         return renderHtml();
     }
 
+    private ClientConfigContext collectClientConfigParams(MultivaluedMap<String, String> params, SessionData session) {
+        String initToken = params.getFirst("init-token");
+        ClientConfigContext clientCtx = new ClientConfigContext(initToken);
+        session.setClientConfigContext(clientCtx);
+        return clientCtx;
+    }
+
+    private OIDCFlowConfigContext collectOIDCFlowConfigParams(MultivaluedMap<String, String> params, SessionData session) {
+        boolean pkce = params.getFirst("pkce") != null;
+        boolean nonce = params.getFirst("nonce") != null;
+        boolean requestObject = params.getFirst("request-object") != null;
+        boolean useDPoP = params.getFirst("dpop") != null;
+        OIDCFlowConfigContext ctx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP);
+        session.setOidcFlowContext(ctx);
+        return ctx;
+    }
+
     @GET
     @Produces("text/html")
     @NoCache
@@ -233,7 +245,7 @@ public class WebEndpoint {
                 // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
                 AccessTokenRequest tokenRequest = Services.instance().getOauthClient().accessTokenRequest(code);
 
-                if (session.getOidcFlowContext().useDPoP()) {
+                if (session.getOidcConfigContext().isUseDPoP()) {
                     String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
                     tokenRequest.dpopProof(dpopProof);
                 }
@@ -252,7 +264,6 @@ public class WebEndpoint {
                 log.error(me.getMessage(), me);
             }
         }
-        fmAttributes.put("reqParams", new ReqParams(null));
         return renderHtml();
     }
 
@@ -271,8 +282,8 @@ public class WebEndpoint {
             throw new MyException("Not client registered. Please register client first");
         }
 
-        if (oidcFlowCtx.useRequestObject()) {
-            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.useNonce());
+        if (oidcFlowCtx.isUseRequestObject()) {
+            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.isUseNonce());
             KeysWrapper keys = Services.instance().getSession().getKeys();
             if (keys == null) {
                 throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
@@ -295,13 +306,13 @@ public class WebEndpoint {
                     .loginForm()
                         .state(SecretGenerator.getInstance().generateSecureID())
                         .request(null);
-            if (oidcFlowCtx.usePkce()) {
+            if (oidcFlowCtx.isUsePkce()) {
                 loginUrl.codeChallenge(PkceGenerator.s256());
             } else {
                 loginUrl.codeChallenge(null, null);
             }
 
-            if (oidcFlowCtx.useNonce()) {
+            if (oidcFlowCtx.isUseNonce()) {
                 loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
             } else {
                 loginUrl.nonce(null);
