@@ -96,6 +96,8 @@
     <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
     <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
     <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
+    <button onclick="submitWithAction('refresh-token')">Refresh token</button>
+    <button onclick="submitWithAction('send-user-info')">Send UserInfo request</button>
     </div>
 
 

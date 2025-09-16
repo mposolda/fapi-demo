@@ -28,10 +28,12 @@ import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
 import org.keycloak.example.bean.ServerInfoBean;
 import org.keycloak.example.bean.UrlBean;
+import org.keycloak.example.oauth.AbstractHttpPostRequest;
 import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.example.oauth.LoginUrlBuilder;
 import org.keycloak.example.oauth.PkceGenerator;
+import org.keycloak.example.oauth.RefreshRequest;
 import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
@@ -94,6 +96,7 @@ public class WebEndpoint {
         MultivaluedMap<String, String> params = request.getDecodedFormParameters();
         String action = params.getFirst("my-action");
         SessionData session = Services.instance().getSession();
+        WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> lastTokenResponse = session.getTokenRequestCtx();
         try {
             switch (action) {
                 case "wellknown-endpoint":
@@ -170,37 +173,77 @@ public class WebEndpoint {
                             param -> param.substring(param.indexOf('=') + 1)));
                     return handleLoginCallback(parsedParams.get(OAuth2Constants.CODE), parsedParams.get(OAuth2Constants.ERROR), parsedParams.get(OAuth2Constants.ERROR_DESCRIPTION), authzResponseUrl);
                 case "show-last-token-response":
-                    WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenResp = session.getTokenRequestCtx();
-                    if (tokenResp == null) {
+                    if (lastTokenResponse == null) {
                         fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
                             InfoBean info = new InfoBean();
                             fmAttributes.put("info", info);
 
-                            infoTokenRequestAndResponse(info, tokenResp.getRequest(), tokenResp.getResponse());
+                            infoTokenRequestAndResponse(info, lastTokenResponse.getRequest(), lastTokenResponse.getResponse());
                         } catch (IOException ioe) {
                             throw new MyException("Error when trying to deserialize OIDC registered client", ioe);
                         }
                     }
                     break;
                 case "show-last-tokens":
-                    WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRespp = session.getTokenRequestCtx();
-                    if (tokenRespp == null) {
+                    if (lastTokenResponse == null) {
                         fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
-                            AccessTokenResponse atr = tokenRespp.getResponse();
-                            IDToken idToken = new JWSInput(atr.getIdToken()).readJsonContent(IDToken.class);
-                            AccessToken accessToken = new JWSInput(atr.getAccessToken()).readJsonContent(AccessToken.class);
-                            RefreshToken refreshToken = new JWSInput(atr.getRefreshToken()).readJsonContent(RefreshToken.class);
-                            fmAttributes.put("info", new InfoBean(
-                                    "Last ID Token", JsonSerialization.writeValueAsPrettyString(idToken),
-                                    "Last Access Token", JsonSerialization.writeValueAsPrettyString(accessToken),
-                                    "Last Refresh Token", JsonSerialization.writeValueAsPrettyString(refreshToken)));
+                            AccessTokenResponse atr = lastTokenResponse.getResponse();
+                            if (atr.getAccessToken() == null || atr.getRefreshToken() == null) {
+                                fmAttributes.put("info", new InfoBean("No Tokens", "No tokens. Please login first."));
+                            } else {
+                                IDToken idToken = new JWSInput(atr.getIdToken()).readJsonContent(IDToken.class);
+                                AccessToken accessToken = new JWSInput(atr.getAccessToken()).readJsonContent(AccessToken.class);
+                                RefreshToken refreshToken = new JWSInput(atr.getRefreshToken()).readJsonContent(RefreshToken.class);
+                                fmAttributes.put("info", new InfoBean(
+                                        "Last ID Token", JsonSerialization.writeValueAsPrettyString(idToken),
+                                        "Last Access Token", JsonSerialization.writeValueAsPrettyString(accessToken),
+                                        "Last Refresh Token", JsonSerialization.writeValueAsPrettyString(refreshToken)));
+                            }
                         } catch (IOException | JWSInputException ioe) {
                             throw new MyException("Error when trying to deserialize tokens from token response", ioe);
                         }
+                    }
+                    break;
+                case "refresh-token":
+                    collectOIDCFlowConfigParams(params, session);
+                    if (lastTokenResponse == null) {
+                        fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
+                    } else {
+                        try {
+                            if (lastTokenResponse.getResponse().getRefreshToken() == null) {
+                                fmAttributes.put("info", new InfoBean("No Refresh token", "No refresh token. Please login first."));
+                            } else {
+                                InfoBean info = new InfoBean();
+                                fmAttributes.put("info", info);
+
+                                WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> refreshedTokenResponse = sendTokenRefresh(session);
+                                session.setTokenRequestCtx(new WebRequestContext<>(refreshedTokenResponse.getRequest(), refreshedTokenResponse.getResponse()));
+
+                                info.addOutput("Refresh token request", JsonSerialization.writeValueAsPrettyString(refreshedTokenResponse.getRequest().getRequestInfo()))
+                                        .addOutput("Refresh token response", JsonSerialization.writeValueAsPrettyString(refreshedTokenResponse.getResponse()));
+                            }
+                        } catch (IOException ioe) {
+                            throw new MyException("Error when trying to refresh token", ioe);
+                        }
+                    }
+                    break;
+                case "send-user-info":
+                    if (lastTokenResponse == null) {
+                        fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
+                    } else {
+                        // TODO:mposolda implement
+//                        try {
+//                            InfoBean info = new InfoBean();
+//                            fmAttributes.put("info", info);
+//
+//                            // infoTokenRequestAndResponse(info, tokenResp.getRequest(), tokenResp.getResponse());
+//                        } catch (IOException ioe) {
+//                            throw new MyException("Error when sending user-info request", ioe);
+//                        }
                     }
                     break;
                 default:
@@ -281,7 +324,7 @@ public class WebEndpoint {
         return renderHtml();
     }
 
-    private void infoTokenRequestAndResponse(InfoBean info, AccessTokenRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
+    private void infoTokenRequestAndResponse(InfoBean info, AbstractHttpPostRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
         info.addOutput("Token request", JsonSerialization.writeValueAsPrettyString(tokenRequest.getRequestInfo()))
                 .addOutput("Token response", JsonSerialization.writeValueAsPrettyString(tokenResponse));
     }
@@ -381,6 +424,19 @@ public class WebEndpoint {
             requestObject.setNonce(UUIDUtil.generateId());
         }
         return requestObject;
+    }
+
+    private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> sendTokenRefresh(SessionData session) {
+        OAuthClient oauthClient = Services.instance().getOauthClient();
+        String refreshToken = session.getTokenRequestCtx().getResponse().getRefreshToken(); // Already checked that there is tokenRequestCtx
+        RefreshRequest tokenRequest = oauthClient.refreshRequest(refreshToken);
+
+        if (session.getOidcConfigContext().isUseDPoP()) {
+            String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), refreshToken);
+            tokenRequest.dpopProof(dpopProof);
+        }
+        AccessTokenResponse tokenResponse = tokenRequest.send();
+        return new WebRequestContext<>(tokenRequest, tokenResponse);
     }
 
 }

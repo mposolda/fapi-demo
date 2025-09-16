@@ -1,6 +1,7 @@
 package org.keycloak.example.util;
 
 import org.keycloak.example.Services;
+import org.keycloak.example.oauth.AbstractHttpPostRequest;
 import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
@@ -19,7 +20,7 @@ public class SessionData {
 
     private String authenticationRequestUrl;
 
-    private WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx;
+    private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> tokenRequestCtx;
 
     private OIDCFlowConfigContext oidcFlowConfigContext = new OIDCFlowConfigContext(false, false, false, false);
 
@@ -63,11 +64,11 @@ public class SessionData {
         this.authenticationRequestUrl = authenticationRequestUrl;
     }
 
-    public WebRequestContext<AccessTokenRequest, AccessTokenResponse> getTokenRequestCtx() {
+    public WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> getTokenRequestCtx() {
         return tokenRequestCtx;
     }
 
-    public void setTokenRequestCtx(WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx) {
+    public void setTokenRequestCtx(WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> tokenRequestCtx) {
         this.tokenRequestCtx = tokenRequestCtx;
     }
 
