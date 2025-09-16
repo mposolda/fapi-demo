@@ -34,6 +34,8 @@ import org.keycloak.example.oauth.AccessTokenResponse;
 import org.keycloak.example.oauth.LoginUrlBuilder;
 import org.keycloak.example.oauth.PkceGenerator;
 import org.keycloak.example.oauth.RefreshRequest;
+import org.keycloak.example.oauth.UserInfoRequest;
+import org.keycloak.example.oauth.UserInfoResponse;
 import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.KeysWrapper;
@@ -232,18 +234,25 @@ public class WebEndpoint {
                     }
                     break;
                 case "send-user-info":
+                    collectOIDCFlowConfigParams(params, session);
                     if (lastTokenResponse == null) {
                         fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
-                        // TODO:mposolda implement
-//                        try {
-//                            InfoBean info = new InfoBean();
-//                            fmAttributes.put("info", info);
-//
-//                            // infoTokenRequestAndResponse(info, tokenResp.getRequest(), tokenResp.getResponse());
-//                        } catch (IOException ioe) {
-//                            throw new MyException("Error when sending user-info request", ioe);
-//                        }
+                        try {
+                            if (lastTokenResponse.getResponse().getAccessToken() == null) {
+                                fmAttributes.put("info", new InfoBean("No access token", "No access token. Please login first."));
+                            } else {
+                                InfoBean info = new InfoBean();
+                                fmAttributes.put("info", info);
+
+                                WebRequestContext<UserInfoRequest, UserInfoResponse> userInfo = sendUserInfo(session);
+
+                                info.addOutput("User Info request", JsonSerialization.writeValueAsPrettyString(userInfo.getRequest().getRequestInfo()))
+                                        .addOutput("User Info response", JsonSerialization.writeValueAsPrettyString(userInfo.getResponse()));
+                            }
+                        } catch (IOException ioe) {
+                            throw new MyException("Error when trying to send user info", ioe);
+                        }
                     }
                     break;
                 default:
@@ -437,6 +446,19 @@ public class WebEndpoint {
         }
         AccessTokenResponse tokenResponse = tokenRequest.send();
         return new WebRequestContext<>(tokenRequest, tokenResponse);
+    }
+
+    private WebRequestContext<UserInfoRequest, UserInfoResponse> sendUserInfo(SessionData session) {
+        OAuthClient oauthClient = Services.instance().getOauthClient();
+        String accessToken = session.getTokenRequestCtx().getResponse().getAccessToken(); // Already checked that there is tokenRequestCtx
+        UserInfoRequest userInfoRequest = oauthClient.userInfoRequest(accessToken);
+
+        if (session.getOidcConfigContext().isUseDPoP()) {
+            String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.GET, session.getAuthServerInfo().getUserinfoEndpoint(), accessToken);
+            userInfoRequest.dpop(dpopProof);
+        }
+        UserInfoResponse tokenResponse = userInfoRequest.send();
+        return new WebRequestContext<>(userInfoRequest, tokenResponse);
     }
 
 }
