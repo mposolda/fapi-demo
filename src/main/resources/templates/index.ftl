@@ -14,9 +14,30 @@
 
     <div>
         <table>
-            <tr><td>Init token: </td><td><input id="init-token" name="init-token" value="${clientConfigCtx.initialAccessToken!}"></td></td></tr>
-            <tr><td>Confidential client: </td><td><input id="confidential-client" name="confidential-client" type="checkbox"></td></td></tr>
-            <tr><td>Generate client keys: </td><td><input id="jwks" name="jwks" type="checkbox"></td></td></tr>
+            <tr><td>Init token: </td><td><input id="init-token" name="init-token" value="${clientConfigCtx.initialAccessToken!}"></td></tr>
+            <tr>
+                <td>Client authentication method: </td>
+                <td>
+                    <select name="client-auth-method" id="client-auth-method" value="${clientConfigCtx.clientAuthMethod!}">
+                        <#if clientConfigCtx.clientAuthMethod == "none">
+                            <option value="none" selected>none</option>
+                        <#else>
+                            <option value="none">none</option>
+                        </#if>
+                        <#if clientConfigCtx.clientAuthMethod == "client_secret_basic">
+                            <option value="client_secret_basic" selected>client_secret_basic</option>
+                        <#else>
+                            <option value="client_secret_basic">client_secret_basic</option>
+                        </#if>
+                        <#if clientConfigCtx.clientAuthMethod == "tls_client_auth">
+                            <option value="tls_client_auth" selected>tls_client_auth</option>
+                        <#else>
+                            <option value="tls_client_auth">tls_client_auth</option>
+                        </#if>
+                    </select>
+                </td>
+            </tr>
+            <tr><td>Generate client keys: </td><td><input id="jwks" name="jwks" type="checkbox"></td></tr>
         </table>
     </div>
     <br />
@@ -40,7 +61,7 @@
                 <#else>
                     <input id="pkce" name="pkce" type="checkbox">
                 </#if>
-                </td></td>
+                </td>
             </tr>
             <tr>
                 <td>Use Nonce parameter: </td><td>
@@ -49,7 +70,7 @@
                 <#else>
                     <input id="nonce" name="nonce" type="checkbox">
                 </#if>
-            </td></td></tr>
+                </td></tr>
             <tr>
                 <td>Use Request object: </td><td>
                 <#if oidcConfigCtx.useRequestObject>
@@ -57,7 +78,7 @@
                 <#else>
                     <input id="request-object" name="request-object" type="checkbox">
                 </#if>
-                </td></td>
+                </td>
             </tr>
             <tr>
                 <td>Use DPoP: </td><td>
@@ -66,7 +87,7 @@
                 <#else>
                     <input id="dpop" name="dpop" type="checkbox">
                 </#if>
-                </td></td>
+                </td>
             </tr>
         </table>
     </div>

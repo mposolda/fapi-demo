@@ -11,7 +11,7 @@ import org.keycloak.representations.oidc.OIDCClientRepresentation;
  */
 public class SessionData {
 
-    private ClientConfigContext clientConfigContext = new ClientConfigContext(null);
+    private ClientConfigContext clientConfigContext = new ClientConfigContext(null, "none");
 
     private OIDCClientRepresentation registeredClient;
 

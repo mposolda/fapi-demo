@@ -114,12 +114,19 @@ public class WebEndpoint {
 
                     ClientRegistrationWrapper clientReg = ClientRegistrationWrapper.create();
                     clientReg.setInitToken(initToken);
-                    boolean confidentialClient = params.getFirst("confidential-client") != null;
-                    boolean generateJwks = params.getFirst("jwks") != null;
-                    OIDCClientRepresentation oidcClient = createClientToRegister(confidentialClient, generateJwks);
+
+                    boolean generateJwks = params.getFirst("jwks") != null; // TODO: Put to clientConfigContext to make it "persistent"
+                    OIDCClientRepresentation oidcClient = createClientToRegister(clientCtx.getClientAuthMethod(), generateJwks);
                     try {
                         WebRequestContext<OIDCClientRepresentation, OIDCClientRepresentation> res = clientReg.registerClient(oidcClient);
                         session.setRegisteredClient(res.getResponse());
+
+                        OAuthClient oauthClient = Services.instance().getOauthClient();
+                        if (OIDCLoginProtocol.CLIENT_SECRET_BASIC.equals(session.getClientConfigContext().getClientAuthMethod())) {
+                            oauthClient.client(res.getResponse().getClientId(), res.getResponse().getClientSecret());
+                        } else {
+                            oauthClient.client(res.getResponse().getClientId());
+                        }
 
                         fmAttributes.put("info", new InfoBean("Client Registration Request", JsonSerialization.writeValueAsPrettyString(res.getRequest()),
                                 "Client Registration Response", JsonSerialization.writeValueAsPrettyString(res.getResponse())));
@@ -209,7 +216,8 @@ public class WebEndpoint {
 
     private ClientConfigContext collectClientConfigParams(MultivaluedMap<String, String> params, SessionData session) {
         String initToken = params.getFirst("init-token");
-        ClientConfigContext clientCtx = new ClientConfigContext(initToken);
+        String clientAuthMethod = params.getFirst("client-auth-method");
+        ClientConfigContext clientCtx = new ClientConfigContext(initToken, clientAuthMethod);
         session.setClientConfigContext(clientCtx);
         return clientCtx;
     }
@@ -249,7 +257,8 @@ public class WebEndpoint {
         } else {
             try {
                 // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
-                AccessTokenRequest tokenRequest = Services.instance().getOauthClient().accessTokenRequest(code);
+                OAuthClient oauthClient = Services.instance().getOauthClient();
+                AccessTokenRequest tokenRequest = oauthClient.accessTokenRequest(code);
 
                 if (session.getOidcConfigContext().isUseDPoP()) {
                     String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
@@ -293,7 +302,7 @@ public class WebEndpoint {
                 throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
             }
             String request = keys.getOidcRequest(requestObject, Services.instance().getSession().getRegisteredClient().getRequestObjectSigningAlg());
-            oauthClient.client(oidcClient.getClientId());
+            // oauthClient.client(oidcClient.getClientId()); Already set after client registration
             return oauthClient.redirectUri(null)
                     .responseType(null)
                     .loginForm()
@@ -304,7 +313,7 @@ public class WebEndpoint {
             // oauthClient.responseMode("query");
                         .build();
         } else {
-            LoginUrlBuilder loginUrl = oauthClient.client(oidcClient.getClientId())
+            LoginUrlBuilder loginUrl = oauthClient//.client(oidcClient.getClientId()) - Already set after client registration
                 .responseType(OAuth2Constants.CODE)
                 .redirectUri(oidcClient.getRedirectUris().get(0))
                     .loginForm()
@@ -326,18 +335,16 @@ public class WebEndpoint {
     }
 
 
-    private OIDCClientRepresentation createClientToRegister(boolean confidentialClient, boolean generateJwks) {
+    private OIDCClientRepresentation createClientToRegister(String clientAuthMethod, boolean generateJwks) {
         OIDCClientRepresentation client = new OIDCClientRepresentation();
         client.setClientName("my fapi client");
         UrlBean urls = new UrlBean();
         client.setClientUri(urls.getBaseUrl());
         client.setRedirectUris(Collections.singletonList(urls.getClientRedirectUri()));
-        if (confidentialClient) {
-            client.setTokenEndpointAuthMethod(OIDCLoginProtocol.TLS_CLIENT_AUTH);
+        client.setTokenEndpointAuthMethod(clientAuthMethod);
+        if (OIDCLoginProtocol.TLS_CLIENT_AUTH.equals(clientAuthMethod)) {
             client.setTlsClientAuthSubjectDn(MyConstants.EXACT_CERTIFICATE_SUBJECT_DN);
             client.setResponseTypes(Arrays.asList("code", "code id_token")); // Indicates that we want fapi advanced. This should be done in a better way...
-        } else {
-            client.setTokenEndpointAuthMethod("none");
         }
 
         if (generateJwks) {
