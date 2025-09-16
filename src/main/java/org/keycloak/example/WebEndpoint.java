@@ -1,9 +1,6 @@
 package org.keycloak.example;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -12,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HttpMethod;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -24,7 +22,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuth2Constants;
-import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.SecretGenerator;
 import org.keycloak.common.util.Time;
 import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
@@ -40,6 +37,7 @@ import org.keycloak.example.util.KeysWrapper;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.MyException;
 import org.keycloak.example.util.OAuthClient;
+import org.keycloak.example.util.OIDCFlowConfigContext;
 import org.keycloak.example.util.OIDCLoginProtocol;
 import org.keycloak.example.util.ReqParams;
 import org.keycloak.example.util.SessionData;
@@ -148,7 +146,11 @@ public class WebEndpoint {
                     boolean pkce = params.getFirst("pkce") != null;
                     boolean nonce = params.getFirst("nonce") != null;
                     boolean requestObject = params.getFirst("request-object") != null;
-                    String authRequestUrl = getAuthorizationRequestUrl(pkce, nonce, requestObject);
+                    boolean useDPoP = params.getFirst("dpop") != null;
+                    OIDCFlowConfigContext oidcFlowCtx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP);
+                    session.setOidcFlowContext(oidcFlowCtx);
+
+                    String authRequestUrl = getAuthorizationRequestUrl(oidcFlowCtx);
                     fmAttributes.put("info", new InfoBean("OIDC Authentication Request URL", authRequestUrl, null, null));
                     fmAttributes.put("authRequestUrl", authRequestUrl);
                     session.setAuthenticationRequestUrl(authRequestUrl);
@@ -230,6 +232,11 @@ public class WebEndpoint {
             try {
                 // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
                 AccessTokenRequest tokenRequest = Services.instance().getOauthClient().accessTokenRequest(code);
+
+                if (session.getOidcFlowContext().useDPoP()) {
+                    String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
+                    tokenRequest.dpopProof(dpopProof);
+                }
                 AccessTokenResponse tokenResponse = tokenRequest.send();
 
                 StringBuilder authzPart = new StringBuilder("Authentication request URL: " + session.getAuthenticationRequestUrl() + "\n\n");
@@ -256,7 +263,7 @@ public class WebEndpoint {
     }
 
 
-    private String getAuthorizationRequestUrl(boolean pkce, boolean nonce, boolean useRequestObject) {
+    private String getAuthorizationRequestUrl(OIDCFlowConfigContext oidcFlowCtx) {
         OAuthClient oauthClient = Services.instance().getOauthClient();
         SessionData session = Services.instance().getSession();
         OIDCClientRepresentation oidcClient = session.getRegisteredClient();
@@ -264,8 +271,8 @@ public class WebEndpoint {
             throw new MyException("Not client registered. Please register client first");
         }
 
-        if (useRequestObject) {
-            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), nonce);
+        if (oidcFlowCtx.useRequestObject()) {
+            AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.useNonce());
             KeysWrapper keys = Services.instance().getSession().getKeys();
             if (keys == null) {
                 throw new MyException("JWKS keys not set when generating request object. Keys need to be created during client registration");
@@ -288,36 +295,18 @@ public class WebEndpoint {
                     .loginForm()
                         .state(SecretGenerator.getInstance().generateSecureID())
                         .request(null);
-            if (pkce) {
-                String codeVerifier = UUIDUtil.generateId() + UUIDUtil.generateId(); // TODO:mposolda can use SecretGenerator instead?
-                String codeChallenge = generateS256CodeChallenge(codeVerifier);
+            if (oidcFlowCtx.usePkce()) {
                 loginUrl.codeChallenge(PkceGenerator.s256());
-//                oauthClient.codeChallengeMethod(OAuth2Constants.PKCE_METHOD_S256);
-//                oauthClient.codeVerifier(codeVerifier);
             } else {
                 loginUrl.codeChallenge(null, null);
-//                oauthClient.codeChallenge(null);
-//                oauthClient.codeChallengeMethod(null);
             }
 
-            if (nonce) {
+            if (oidcFlowCtx.useNonce()) {
                 loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
             } else {
                 loginUrl.nonce(null);
             }
             return loginUrl.build();
-        }
-    }
-
-    private String generateS256CodeChallenge(String codeVerifier) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(codeVerifier.getBytes("ISO_8859_1"));
-            byte[] digestBytes = md.digest();
-            String codeChallenge = Base64Url.encode(digestBytes);
-            return codeChallenge;
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            throw new MyException("Error when generating code challenge for pkce", e);
         }
     }
 

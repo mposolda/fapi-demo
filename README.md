@@ -34,11 +34,15 @@ This is tested with OpenJDK 8 and Maven 3.6.3
 
 This was tested with OpenJDK 21 and Keycloak nightly distribution (before 26.4.0 release) 
 
-1) Copy `keystores/keycloak.jks` to the `$KEYCLOAK_HOME/bin` 
-
-2) Start the server (but not sure if it is complete...)
+1) Copy keystore + truststore to the Keycloak distribution:
 ```
-/kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret
+cp keystores/keycloak.* $KEYCLOAK_HOME/bin
+```
+
+2) Start the server (but more things are needed to have MTLS client authentication working. See below...)
+```
+./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
+--https-trust-store-file=keycloak.truststore --https-trust-store-password=secret
 ```
 
 OUTDATED instructions for Keycloak on Wildfly (TODO: Remove them...)
@@ -114,8 +118,8 @@ cd $KEYCLOAK_HOME/bin
 
 5.b) Create realm `test` and some user in it 
 
-5.c) Under `Client Registration` -> `Initial Access Tokens` create new initial access token and copy it somewhere for the
-later use in the demo 
+5.c) Under `Clients` -> `Initial Access Tokens` create new initial access token and copy it somewhere for the
+later use in the demo. For demo purposes, use bigger number of clients (EG. 99).
 
 
 ## Start example app and deploy the example

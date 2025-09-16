@@ -1,5 +1,6 @@
 package org.keycloak.example;
 
+import org.keycloak.common.crypto.CryptoIntegration;
 import org.keycloak.example.util.FreeMarkerUtil;
 import org.keycloak.example.util.MutualTLSUtils;
 import org.keycloak.example.util.MyConstants;
@@ -18,6 +19,7 @@ public class Services {
 
     private static final Services instance = new Services();
     private Services() {
+        CryptoIntegration.init(Services.class.getClassLoader());
     }
 
 

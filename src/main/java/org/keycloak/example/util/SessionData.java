@@ -21,6 +21,10 @@ public class SessionData {
 
     private WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx;
 
+    private OIDCFlowConfigContext oidcFlowConfigContext;
+
+    private DPoPContext dpopContext;
+
     public OIDCConfigurationRepresentation getAuthServerInfo() {
         return Services.instance().getOauthClient().
                 realm(MyConstants.REALM_NAME)
@@ -65,5 +69,20 @@ public class SessionData {
 
     public void setTokenRequestCtx(WebRequestContext<AccessTokenRequest, AccessTokenResponse> tokenRequestCtx) {
         this.tokenRequestCtx = tokenRequestCtx;
+    }
+
+    public OIDCFlowConfigContext getOidcFlowContext() {
+        return oidcFlowConfigContext;
+    }
+
+    public void setOidcFlowContext(OIDCFlowConfigContext oidcFlowConfigContext) {
+        this.oidcFlowConfigContext = oidcFlowConfigContext;
+    }
+
+    public DPoPContext getOrCreateDpopContext() {
+        if (dpopContext == null) {
+            dpopContext = new DPoPContext();
+        }
+        return dpopContext;
     }
 }

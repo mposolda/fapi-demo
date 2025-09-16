@@ -36,6 +36,7 @@
             <tr><td>Use PKCE: </td><td><input id="pkce" name="pkce" type="checkbox"></td></td></tr>
             <tr><td>Use Nonce parameter: </td><td><input id="nonce" name="nonce" type="checkbox"></td></td></tr>
             <tr><td>Use Request object: </td><td><input id="request-object" name="request-object" type="checkbox"></td></td></tr>
+            <tr><td>Use DPoP: </td><td><input id="dpop" name="dpop" type="checkbox"></td></td></tr>
         </table>
     </div>
     <br />

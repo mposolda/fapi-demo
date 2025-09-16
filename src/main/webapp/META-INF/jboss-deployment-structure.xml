@@ -2,11 +2,11 @@
 <jboss-deployment-structure>
     <deployment>
         <dependencies>
+            <module name="com.google.guava" />
             <module name="org.apache.httpcomponents" />
             <module name="org.apache.commons.io" />
+            <module name="org.bouncycastle" />
             <module name="org.jboss.logging" />
-            <module name="com.google.guava" />
-            <module name="com.google.guava" />
         </dependencies>
     </deployment>
 </jboss-deployment-structure>
