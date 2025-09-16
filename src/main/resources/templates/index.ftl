@@ -88,7 +88,7 @@
 <hr />
 
 <#if info??>
-    <#list info.outs as out>
+    <#list info.outputs as out>
         <h3>${out.title!}</h3>
         <pre style="background-color: #ddd; border: 1px solid #ccc; padding: 10px; word-wrap: break-word; white-space: pre-wrap;" id="output">${out.content!}</pre>
         <hr />

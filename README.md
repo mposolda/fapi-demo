@@ -42,7 +42,8 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 2) Start the server (but more things are needed to have MTLS client authentication working. See below...)
 ```
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
---https-trust-store-file=keycloak.truststore --https-trust-store-password=secret
+--https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
+--features=dpop --debug
 ```
 
 OUTDATED instructions for Keycloak on Wildfly (TODO: Remove them...)

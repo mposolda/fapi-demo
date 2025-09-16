@@ -49,6 +49,7 @@ import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.IDToken;
+import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.util.JsonSerialization;
 
@@ -167,8 +168,10 @@ public class WebEndpoint {
                         fmAttributes.put("info", new InfoBean("No Token Response", "No token response yet. Please login first."));
                     } else {
                         try {
-                            fmAttributes.put("info", new InfoBean("Last Token Request & Response",
-                                    renderTokenRequestAndResponse(tokenResp.getRequest(), tokenResp.getResponse()).toString()));
+                            InfoBean info = new InfoBean();
+                            fmAttributes.put("info", info);
+
+                            infoTokenRequestAndResponse(info, tokenResp.getRequest(), tokenResp.getResponse());
                         } catch (IOException ioe) {
                             throw new MyException("Error when trying to deserialize OIDC registered client", ioe);
                         }
@@ -183,8 +186,11 @@ public class WebEndpoint {
                             AccessTokenResponse atr = tokenRespp.getResponse();
                             IDToken idToken = new JWSInput(atr.getIdToken()).readJsonContent(IDToken.class);
                             AccessToken accessToken = new JWSInput(atr.getAccessToken()).readJsonContent(AccessToken.class);
-                            fmAttributes.put("info", new InfoBean("Last ID Token", JsonSerialization.writeValueAsPrettyString(idToken),
-                                    "Last Access Token", JsonSerialization.writeValueAsPrettyString(accessToken)));
+                            RefreshToken refreshToken = new JWSInput(atr.getRefreshToken()).readJsonContent(RefreshToken.class);
+                            fmAttributes.put("info", new InfoBean(
+                                    "Last ID Token", JsonSerialization.writeValueAsPrettyString(idToken),
+                                    "Last Access Token", JsonSerialization.writeValueAsPrettyString(accessToken),
+                                    "Last Refresh Token", JsonSerialization.writeValueAsPrettyString(refreshToken)));
                         } catch (IOException | JWSInputException ioe) {
                             throw new MyException("Error when trying to deserialize tokens from token response", ioe);
                         }
@@ -251,13 +257,12 @@ public class WebEndpoint {
                 }
                 AccessTokenResponse tokenResponse = tokenRequest.send();
 
-                StringBuilder authzPart = new StringBuilder("Authentication request URL: " + session.getAuthenticationRequestUrl() + "\n\n");
-                authzPart.append("Authentication response URL: " + origAuthzResponseUrl);
+                InfoBean info = new InfoBean("Authentication request URL", session.getAuthenticationRequestUrl())
+                        .addOutput("Authentication response URL", origAuthzResponseUrl);
 
-                StringBuilder tokenPart = renderTokenRequestAndResponse(tokenRequest, tokenResponse);
+                infoTokenRequestAndResponse(info, tokenRequest, tokenResponse);
 
-                fmAttributes.put("info", new InfoBean("OIDC Authentication request & response", authzPart.toString(),
-                        "OIDC Token request & response", tokenPart.toString()));
+                fmAttributes.put("info", info);
                 session.setTokenRequestCtx(new WebRequestContext<>(tokenRequest, tokenResponse));
             } catch (Exception me) {
                 fmAttributes.put("info", new InfoBean("Error!", "Error when performing action. See server log for details"));
@@ -267,10 +272,9 @@ public class WebEndpoint {
         return renderHtml();
     }
 
-    private StringBuilder renderTokenRequestAndResponse(AccessTokenRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
-        StringBuilder tokenPart = new StringBuilder("Token request: " +  JsonSerialization.writeValueAsPrettyString(tokenRequest.getRequestInfo()) + "\n\n");
-        tokenPart.append("Token response: " + JsonSerialization.writeValueAsPrettyString(tokenResponse));
-        return tokenPart;
+    private void infoTokenRequestAndResponse(InfoBean info, AccessTokenRequest tokenRequest, AccessTokenResponse tokenResponse) throws IOException {
+        info.addOutput("Token request", JsonSerialization.writeValueAsPrettyString(tokenRequest.getRequestInfo()))
+                .addOutput("Token response", JsonSerialization.writeValueAsPrettyString(tokenResponse));
     }
 
 
