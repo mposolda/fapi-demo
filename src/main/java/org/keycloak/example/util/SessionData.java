@@ -22,7 +22,7 @@ public class SessionData {
 
     private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> tokenRequestCtx;
 
-    private OIDCFlowConfigContext oidcFlowConfigContext = new OIDCFlowConfigContext(false, false, false, false);
+    private OIDCFlowConfigContext oidcFlowConfigContext = new OIDCFlowConfigContext(false, false, false, false, false);
 
     private DPoPContext dpopContext;
 

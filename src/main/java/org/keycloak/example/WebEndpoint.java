@@ -38,6 +38,7 @@ import org.keycloak.example.oauth.UserInfoRequest;
 import org.keycloak.example.oauth.UserInfoResponse;
 import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
+import org.keycloak.example.util.DPoPContext;
 import org.keycloak.example.util.KeysWrapper;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.MyException;
@@ -48,12 +49,14 @@ import org.keycloak.example.util.SessionData;
 import org.keycloak.example.util.UUIDUtil;
 import org.keycloak.example.util.WebRequestContext;
 import org.keycloak.jose.jwk.JSONWebKeySet;
+import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.IDToken;
 import org.keycloak.representations.RefreshToken;
+import org.keycloak.representations.dpop.DPoP;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.util.JsonSerialization;
 
@@ -210,6 +213,25 @@ public class WebEndpoint {
                         }
                     }
                     break;
+                case "show-last-dpop-proof":
+                    String lastDPoP = session.getOrCreateDpopContext().getLastDpopProof();
+                    if (lastDPoP == null) {
+                        fmAttributes.put("info", new InfoBean("No DPoP", "No dpop JWT present. Please login first with 'Use DPoP' enabled."));
+                    } else {
+                        try {
+                            JWSInput jws = new JWSInput(lastDPoP);
+                            JWSHeader header = jws.getHeader();
+                            DPoP dpop = jws.readJsonContent(DPoP.class);
+
+                            fmAttributes.put("info", new InfoBean(
+                                    "Last DPoP header", JsonSerialization.writeValueAsPrettyString(header),
+                                    "Last DPoP", JsonSerialization.writeValueAsPrettyString(dpop),
+                                    "Last thumbprint of JWK key", session.getOrCreateDpopContext().generateThumbprintOfLastDpopProof()));
+                        } catch (IOException | JWSInputException ioe) {
+                            throw new MyException("Error when trying to deserialize DPoP JWT", ioe);
+                        }
+                    }
+                    break;
                 case "refresh-token":
                     collectOIDCFlowConfigParams(params, session);
                     if (lastTokenResponse == null) {
@@ -279,7 +301,11 @@ public class WebEndpoint {
         boolean nonce = params.getFirst("nonce") != null;
         boolean requestObject = params.getFirst("request-object") != null;
         boolean useDPoP = params.getFirst("dpop") != null;
-        OIDCFlowConfigContext ctx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP);
+        boolean useDPoPJKT = params.getFirst("dpop-authz-code-binding") != null;
+        if (useDPoPJKT && !useDPoP) {
+            throw new MyException("Incorrect to disable 'Use DPoP' and enable 'Use DPoP Authorization Code Binding' at the same time");
+        }
+        OIDCFlowConfigContext ctx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP, useDPoPJKT);
         session.setOidcFlowContext(ctx);
         return ctx;
     }
@@ -347,6 +373,13 @@ public class WebEndpoint {
             throw new MyException("Not client registered. Please register client first");
         }
 
+        String dpopJkt = null;
+        if (oidcFlowCtx.isUseDPoPAuthzCodeBinding()) {
+            DPoPContext dpopCtx = session.getOrCreateDpopContext();
+            dpopCtx.generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
+            dpopJkt = dpopCtx.generateThumbprintOfLastDpopProof();
+        }
+
         if (oidcFlowCtx.isUseRequestObject()) {
             AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.isUseNonce());
             KeysWrapper keys = Services.instance().getSession().getKeys();
@@ -361,6 +394,7 @@ public class WebEndpoint {
                         .request(request)
                         .nonce(null)
                         .state(null)
+                        .dpopJkt(dpopJkt)
                     //.responseType(null);
             // oauthClient.responseMode("query");
                         .build();
@@ -382,6 +416,7 @@ public class WebEndpoint {
             } else {
                 loginUrl.nonce(null);
             }
+            loginUrl.dpopJkt(dpopJkt);
             return loginUrl.build();
         }
     }

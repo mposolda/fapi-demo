@@ -4,7 +4,11 @@ import java.security.KeyPair;
 
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.KeyUtils;
+import org.keycloak.jose.jwk.JWK;
+import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.util.DPoPGenerator;
+import org.keycloak.util.JWKSUtils;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -16,32 +20,37 @@ public class DPoPContext {
     private KeyPair keyPair;
     private String lastDpopProof;
 
-    public KeyPair getKeyPair() {
-        return keyPair;
-    }
-
-    public void setKeyPair(KeyPair keyPair) {
-        this.keyPair = keyPair;
-    }
-
     public String getLastDpopProof() {
         return lastDpopProof;
     }
 
-    public void setLastDpopProof(String lastDpopProof) {
-        this.lastDpopProof = lastDpopProof;
-    }
-
     public String generateDPoP(String httpMethod, String endpointUrl, String accessToken) {
         if (keyPair == null) {
-            keyPair = KeyUtils.generateRsaKeyPair(2048);
-            log.info("New DPoP RSA keyPair generated.");
+            generateKeys();
         }
         lastDpopProof = DPoPGenerator.generateRsaSignedDPoPProof(keyPair, httpMethod, endpointUrl, accessToken);
         return lastDpopProof;
     }
 
+    public String generateThumbprintOfLastDpopProof() {
+        if (lastDpopProof == null) {
+            return null;
+        }
+
+        try {
+            JWK key = new JWSInput(lastDpopProof).getHeader().getKey();
+            return JWKSUtils.computeThumbprint(key);
+        } catch (JWSInputException jws) {
+            throw new MyException("Error when computing thumbprint of last DPoP proof", jws);
+        }
+    }
+
     public void rotateKeys() {
-        // TODO:mposolda implement...
+        generateKeys();
+    }
+
+    private void generateKeys() {
+        keyPair = KeyUtils.generateRsaKeyPair(2048);
+        log.info("New DPoP RSA keyPair generated.");
     }
 }

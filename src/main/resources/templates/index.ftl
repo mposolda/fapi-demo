@@ -89,15 +89,25 @@
                 </#if>
                 </td>
             </tr>
+            <tr>
+                <td>Use DPoP Authorization Code Binding: </td><td>
+                <#if oidcConfigCtx.useDPoPAuthzCodeBinding>
+                    <input id="dpop-authz-code-binding" name="dpop-authz-code-binding" type="checkbox" checked>
+                <#else>
+                    <input id="dpop-authz-code-binding" name="dpop-authz-code-binding" type="checkbox">
+                </#if>
+                </td>
+            </tr>
         </table>
     </div>
     <br />
     <div>
     <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
-    <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
-    <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
     <button onclick="submitWithAction('refresh-token')">Refresh token</button>
     <button onclick="submitWithAction('send-user-info')">Send UserInfo request</button>
+    <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
+    <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
+    <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>
     </div>
 
 

@@ -69,7 +69,9 @@ public class LoginUrlBuilder extends AbstractUrlBuilder {
     }
 
     public LoginUrlBuilder dpopJkt(String dpopJkt) {
-        parameter(Constants.DPOP_JKT, dpopJkt);
+        if (dpopJkt != null) {
+            parameter(Constants.DPOP_JKT, dpopJkt);
+        }
         return this;
     }
 
