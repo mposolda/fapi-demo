@@ -58,6 +58,7 @@ import org.keycloak.representations.IDToken;
 import org.keycloak.representations.RefreshToken;
 import org.keycloak.representations.dpop.DPoP;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.util.JWKSUtils;
 import org.keycloak.util.JsonSerialization;
 
 /**
@@ -226,7 +227,7 @@ public class WebEndpoint {
                             fmAttributes.put("info", new InfoBean(
                                     "Last DPoP header", JsonSerialization.writeValueAsPrettyString(header),
                                     "Last DPoP", JsonSerialization.writeValueAsPrettyString(dpop),
-                                    "Last thumbprint of JWK key", session.getOrCreateDpopContext().generateThumbprintOfLastDpopProof()));
+                                    "Last thumbprint of JWK key", JWKSUtils.computeThumbprint(header.getKey())));
                         } catch (IOException | JWSInputException ioe) {
                             throw new MyException("Error when trying to deserialize DPoP JWT", ioe);
                         }
@@ -277,6 +278,12 @@ public class WebEndpoint {
                         }
                     }
                     break;
+                case "rotate-dpop-keys":
+                    collectOIDCFlowConfigParams(params, session);
+                    DPoPContext ctx = session.getOrCreateDpopContext();
+                    ctx.rotateKeys();
+                    fmAttributes.put("info", new InfoBean("DPoP Keys rotated", "New thumbprint: " + ctx.generateKeyThumbprint()));
+                    break;
                 default:
                     throw new MyException("Illegal action");
             }
@@ -302,9 +309,9 @@ public class WebEndpoint {
         boolean requestObject = params.getFirst("request-object") != null;
         boolean useDPoP = params.getFirst("dpop") != null;
         boolean useDPoPJKT = params.getFirst("dpop-authz-code-binding") != null;
-        if (useDPoPJKT && !useDPoP) {
-            throw new MyException("Incorrect to disable 'Use DPoP' and enable 'Use DPoP Authorization Code Binding' at the same time");
-        }
+//        if (useDPoPJKT && !useDPoP) {
+//            throw new MyException("Incorrect to disable 'Use DPoP' and enable 'Use DPoP Authorization Code Binding' at the same time");
+//        }
         OIDCFlowConfigContext ctx = new OIDCFlowConfigContext(pkce, nonce, requestObject, useDPoP, useDPoPJKT);
         session.setOidcFlowContext(ctx);
         return ctx;
@@ -373,12 +380,7 @@ public class WebEndpoint {
             throw new MyException("Not client registered. Please register client first");
         }
 
-        String dpopJkt = null;
-        if (oidcFlowCtx.isUseDPoPAuthzCodeBinding()) {
-            DPoPContext dpopCtx = session.getOrCreateDpopContext();
-            dpopCtx.generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
-            dpopJkt = dpopCtx.generateThumbprintOfLastDpopProof();
-        }
+        String dpopJkt = oidcFlowCtx.isUseDPoPAuthzCodeBinding() ? session.getOrCreateDpopContext().generateKeyThumbprint() : null;
 
         if (oidcFlowCtx.isUseRequestObject()) {
             AuthorizationEndpointRequestObject requestObject = createValidRequestObjectForSecureRequestObjectExecutor(oidcClient.getClientId(), oidcFlowCtx.isUseNonce());

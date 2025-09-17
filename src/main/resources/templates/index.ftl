@@ -105,6 +105,7 @@
     <button onclick="submitWithAction('create-login-url')">Create Login URL</button>
     <button onclick="submitWithAction('refresh-token')">Refresh token</button>
     <button onclick="submitWithAction('send-user-info')">Send UserInfo request</button>
+    <button onclick="submitWithAction('rotate-dpop-keys')">Rotate DPoP keys</button>
     <button onclick="submitWithAction('show-last-token-response')">Show Last Token Response</button>
     <button onclick="submitWithAction('show-last-tokens')">Show Last Tokens</button>
     <button onclick="submitWithAction('show-last-dpop-proof')">Show Last DPoP JWT</button>

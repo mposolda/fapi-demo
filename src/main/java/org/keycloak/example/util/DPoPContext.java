@@ -4,9 +4,9 @@ import java.security.KeyPair;
 
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.KeyUtils;
+import org.keycloak.crypto.KeyUse;
 import org.keycloak.jose.jwk.JWK;
-import org.keycloak.jose.jws.JWSInput;
-import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.jose.jwk.JWKBuilder;
 import org.keycloak.util.DPoPGenerator;
 import org.keycloak.util.JWKSUtils;
 
@@ -32,17 +32,14 @@ public class DPoPContext {
         return lastDpopProof;
     }
 
-    public String generateThumbprintOfLastDpopProof() {
-        if (lastDpopProof == null) {
-            return null;
+    public String generateKeyThumbprint() {
+        if (keyPair == null) {
+            generateKeys();
         }
 
-        try {
-            JWK key = new JWSInput(lastDpopProof).getHeader().getKey();
-            return JWKSUtils.computeThumbprint(key);
-        } catch (JWSInputException jws) {
-            throw new MyException("Error when computing thumbprint of last DPoP proof", jws);
-        }
+        JWK jwk = JWKBuilder.create()
+                .rsa(keyPair.getPublic(), KeyUse.SIG);
+        return JWKSUtils.computeThumbprint(jwk);
     }
 
     public void rotateKeys() {
