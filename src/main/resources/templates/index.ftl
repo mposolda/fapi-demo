@@ -1,12 +1,16 @@
 <html>
-    <head><title>FAPI demo</title></head>
+    <head>
+        <title>FAPI demo</title>
+        <link rel="stylesheet" type="text/css" href="https://app.keycloak-fapi.org:8543/fapi-demo/styles.css"/>
+    </head>
     <body>
+        <h1>FAPI playground</h1>
 
-    <h3>Server info</h3>
-    Keycloak server URL: <b>${serverInfo.authServerInfo} </b><br />
-    Realm name: <b>${serverInfo.realmName} </b><br />
-    <br />
-    <hr />
+        <h3>Server info</h3>
+        Keycloak server URL: <b>${serverInfo.authServerInfo} </b><br />
+        Realm name: <b>${serverInfo.realmName} </b><br />
+        <br />
+        <hr />
 
 
 <form id="my-form" method="post" action="${url.action}">

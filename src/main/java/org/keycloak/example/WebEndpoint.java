@@ -1,15 +1,20 @@
 package org.keycloak.example;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -18,11 +23,13 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import org.apache.commons.codec.Charsets;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.annotations.cache.NoCache;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.SecretGenerator;
+import org.keycloak.common.util.StreamUtil;
 import org.keycloak.common.util.Time;
 import org.keycloak.example.bean.AuthorizationEndpointRequestObject;
 import org.keycloak.example.bean.InfoBean;
@@ -40,6 +47,7 @@ import org.keycloak.example.util.ClientConfigContext;
 import org.keycloak.example.util.ClientRegistrationWrapper;
 import org.keycloak.example.util.DPoPContext;
 import org.keycloak.example.util.KeysWrapper;
+import org.keycloak.example.util.MediaType;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.MyException;
 import org.keycloak.example.util.OAuthClient;
@@ -93,6 +101,22 @@ public class WebEndpoint {
         return Services.instance().getFreeMarker().processTemplate(fmAttributes, "index.ftl");
     }
 
+
+    @GET
+    @Produces("text/css")
+    @NoCache // TODO: This could be cached...
+    @Path("/styles.css")
+    public Response staticResources() {
+        try {
+            InputStream is = getClass().getResourceAsStream("/static/styles.css");
+            String css = StreamUtil.readString(is, StandardCharsets.UTF_8);
+
+            Response.ResponseBuilder builder = Response.status(Response.Status.OK).type("text/css").entity(css);
+            return builder.build();
+        } catch (IOException ioe) {
+            throw new NotFoundException("CSS not found", ioe);
+        }
+    }
 
     @POST
     @Produces("text/html")

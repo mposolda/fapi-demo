@@ -23,4 +23,6 @@
         version="6.0">
 
     <module-name>fapi-demo</module-name>
+
+    <!--<resources mapping="/css/**" location="/css/" />-->
 </web-app>
