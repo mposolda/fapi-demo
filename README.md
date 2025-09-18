@@ -146,6 +146,8 @@ cd $APP_HOME/bin
 
 ## Demo
 
+### FAPI DEMO
+
 1) Go to `https://app.keycloak-fapi.org:8543/fapi-demo` 
 
 2) No FAPI yet
@@ -178,6 +180,32 @@ and `Use PKCE`. Otherwise, Keycloak won't allow login.
 
 4.d) After authentication, you can check by `Show Last Tokens` that access token has hash of it's certificate, due Keycloak used `Sender Constrained access token`
 required by the specs.
+
+### DPOP Demo
+
+1) Create new realm `test`, create user `john` in the realm. Update timeouts (SSO Session idle to 2 hours, Access Token lifespan to 1 hour)
+
+2) Normal client registration and login. User-info request
+```
+export KC_REALM=test
+export KC_TOKEN=<copy token here>
+curl -k -v -X POST -H "Content-Type: application/x-www-form-urlencoded" -H "Accept: application/json" -H "Authorization: Bearer $KC_TOKEN" \
+  https://as.keycloak-fapi.org:8443/realms/$KC_REALM/protocol/openid-connect/userinfo
+```
+
+3) DPoP demo basic. Login. Checking DPoP proof and access-token
+
+4) Sending user-info. Checking DPoP proof being used
+
+4) Switch the client to have DPoP being required
+
+5) Refresh token (including public client registration)
+
+6) dpop_jkt showing and testing
+
+7) Executor
+
+
 
 ## Contributions
 
