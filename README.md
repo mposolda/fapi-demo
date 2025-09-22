@@ -1,6 +1,6 @@
-# FAPI Demo
+# FAPI Playground
 
-This is the example application to demonstrate Keycloak FAPI 1 support. It requires to:
+This is the example application to demonstrate Keycloak FAPI 1 support and DPoP support. It requires to:
 - Run and setup Keycloak server on your laptop
 - Run Wildfly server on your laptop with this application deployed
 
@@ -11,6 +11,7 @@ does not do all the verifications prescribed for the client application in the F
 - https://openid.net/specs/openid-financial-api-part-1-1_0.html#public-client
 - https://openid.net/specs/openid-financial-api-part-2-1_0.html#confidential-client
 
+For DPoP, see https://datatracker.ietf.org/doc/html/rfc9449 and Keycloak documentation in https://www.keycloak.org/docs/latest/server_admin/index.html#_oidc_clients .
 
 ## Pre-requisites
 
@@ -83,7 +84,7 @@ cd $APP_HOME/bin
 
 ## Demo
 
-### FAPI 1 DEMO
+### FAPI 1 Demo
 
 1) Go to `https://app.keycloak-fapi.org:8543/fapi-demo` 
 
@@ -114,7 +115,7 @@ and `Use PKCE`. Otherwise, Keycloak won't allow login.
 
 4.a) Change client policy from above to use `fapi-1-advanced` instead of baseline.
 
-4.b) Register new client. It must be checked both checkboxes `Confidential client` and `Generate client keys`
+4.b) Register new client. It must be checked the checkbox `Generate client keys` and `Client authentication method` should be set to `tls_client_auth` in case of "FAPI 1 Advanced"
 
 4.c) Create login URL. It must be checked with both `Use nonce` and `Use Request Object` to send stuff in signed request object.
 
@@ -123,34 +124,70 @@ required by the specs.
 
 ### DPOP Demo
 
-1) Create new realm `test`, create user `john` in the realm. Update timeouts (SSO Session idle to 2 hours, Access Token lifespan to 1 hour)
+1) It is assumption you have realm `test`, some user in the realm and initial access token as described in the `FAPI 1 Demo` above. 
+But it is recommended to disable the client policies set by `FAPI 1 Demo`
 
-2) Normal client registration and login. User-info request
-```
-export KC_REALM=test
-export KC_TOKEN=<copy token here>
-curl -k -v -X POST -H "Content-Type: application/x-www-form-urlencoded" -H "Accept: application/json" -H "Authorization: Bearer $KC_TOKEN" \
-  https://as.keycloak-fapi.org:8443/realms/$KC_REALM/protocol/openid-connect/userinfo
-```
+2) It is recommended to test DPoP with `Client authentication method` set either to `none` (public clients) or `client_auth_basic` (Normal confidential client with client-secret based authentication)
 
-3) DPoP demo basic. Login. Checking DPoP proof and access-token
+3) Switch `Use DPoP` will make sure that DPoP is used in the token-request (after user login and being redirected from Keycloak back to the application), refresh-token request and user-info requests.
+Some example scenarios (you can come with more):
 
-4) Sending user-info. Checking DPoP proof being used
+3.a) Test for public clients. Try to login, Then refresh token (button `Refresh token`) or send User-info request with the obtained access token (Button `Send User Info`).
+Check that both access-token and refresh-token has `cnf` thumbprint after authentication.
 
-4) Switch the client to have DPoP being required
+3.b) Test for confidential clients with `client_auth_basic` authentication. Check that only access-token has `cnf` claim, but refresh token does not have
 
-5) Refresh token (including public client registration)
+3.c) After DPoP login, try to `Rotate DPoP keys`. This will make client application to rotate DPoP keys and hence made existing DPoP bound tokens not effectively usable by this
+client application. You can notice that `Send user info` will not work. The `Refresh token` will not work for public clients,
+but will work for confidential clients (as refresh token is not DPoP bound for confidential client)
 
-6) dpop_jkt showing and testing
+4) Switch `Use DPoP Authorization Code Binding` will add parameter `dpop_jkt` to the OIDC authentication request.
 
-7) Executor
+4.a) Try to enable this switch and disable `Use DPoP`. Login will not work as `dpop_jkt` used in the OIDC authentication request is not used in the token request.
+But when both `Use DPoP Authorization Code Binding` and `Use DPoP` are checked, login should work
+
+5) Try to enable switch `Require DPoP bound tokens` in the Keycloak admin console for your OIDC registered client. Switch can be seen in the section `Capability config` of
+OIDC client in the Keycloak admin console (See Server administration guide for more details). You can see that after doing this, the switch `Use DPoP` in the FAPI playground
+must be checked. Login without DPoP will not work as Token Request will return 400 HTTP error.
+
+6) In the Keycloak admin console, in the tab `Realm settings` -> tab `Client policies` -> tab `Profiles`, you can create new client profile called for example `dpop-profile` and 
+add the client policy executor `dpop-enforcer-executor` to this profile. Configure executor according your preference. Then in the `Realm settings` -> `Client policies` -> `Policies`
+you can create client policy `dpop-policy` with condition `any-client` and link to the `dpop-profile` client profile.
+
+6.a) In the FAPI playground application, you can register new client. If `Auto configure` was enabled for the client policy executor created above, then new client will have
+`"dpop_bound_access_tokens" : true` in the `Client Registration Response`. This means DPoP will be mandatory for this client.
+
+6.b) If you checked `Enforce Authorization Code binding to DPoP key` for the DPoP client policy executor above, you can notice that plagroud will require `Use DPoP Authorization Code Binding`
+for the successful login.
 
 
 
 ## Contributions
 
-Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI.
-Contributions are welcome (See above for potential contributions tips and also search for `TODO:` in the code :-) )
+Anyone is welcome to use this demo according with the licence and feel free to use it in your own presentations for FAPI or OAuth2
+Contributions are welcome. Please send PR to this repository with the possible contributions.
+
+Possible contribution tips:
+
+1) Automated tests
+
+2) Deploy FAPI playground on Quarkus instead of WildFly
+
+3) Make it working without a need to fork `OAuthClient` utilities from Keycloak codebase. The package `org.keycloak.example.oauth` contains lots of
+classes copied from Keycloak module https://github.com/keycloak/keycloak/tree/main/test-framework/oauth . Instead of forking, it can be good to use
+directly the Keycloak classes and have dependency on that Keycloak module. It failed for me due the module has dependency on `keycloak-services`, which has many other 3rd party dependencies
+and this caused some issues when this was deployed on WildFly.
+
+How to possibly fix this:
+3.a) Use Quarkus (See step 2). 
+3.b) Make sure that Keycloak `oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
+not so much dependencies needed
+
+4) Add some other FAPI/OAuth/OIDC related functionality to this demo
+
+5) Cleanup. There are lots of TODOs in the codebase. Also maybe UI can be improved. The README instructions can be possibly improved and made more clear as well.
+
+(See above for potential contributions tips and also search for `TODO:` in the code :-) )
 
 ## Slides
 
