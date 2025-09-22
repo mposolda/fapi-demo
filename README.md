@@ -148,7 +148,7 @@ But when both `Use DPoP Authorization Code Binding` and `Use DPoP` are checked, 
 
 5) Try to enable switch `Require DPoP bound tokens` in the Keycloak admin console for your OIDC registered client. Switch can be seen in the section `Capability config` of
 OIDC client in the Keycloak admin console (See Server administration guide for more details). You can see that after doing this, the switch `Use DPoP` in the FAPI playground
-must be checked. Login without DPoP will not work as Token Request will return 400 HTTP error.
+must be checked. Login without DPoP will not work and Token Request will return 400 HTTP error as DPoP is mandatory.
 
 6) In the Keycloak admin console, in the tab `Realm settings` -> tab `Client policies` -> tab `Profiles`, you can create new client profile called for example `dpop-profile` and 
 add the client policy executor `dpop-enforcer-executor` to this profile. Configure executor according your preference. Then in the `Realm settings` -> `Client policies` -> `Policies`
@@ -169,23 +169,26 @@ Contributions are welcome. Please send PR to this repository with the possible c
 
 Possible contribution tips:
 
-1) Automated tests
+1) Automated tests (ideally with the use of Junit5 and Keycloak test framework - https://www.keycloak.org/2024/11/preview-keycloak-test-framework )
 
 2) Deploy FAPI playground on Quarkus instead of WildFly
 
 3) Make it working without a need to fork `OAuthClient` utilities from Keycloak codebase. The package `org.keycloak.example.oauth` contains lots of
-classes copied from Keycloak module https://github.com/keycloak/keycloak/tree/main/test-framework/oauth . Instead of forking, it can be good to use
-directly the Keycloak classes and have dependency on that Keycloak module. It failed for me due the module has dependency on `keycloak-services`, which has many other 3rd party dependencies
-and this caused some issues when this was deployed on WildFly.
+classes copied from Keycloak module https://github.com/keycloak/keycloak/tree/main/test-framework/oauth . Instead of forking classes, it can be good to use
+directly the Keycloak classes and have dependency on that Keycloak module. It failed for me due the `keycloak-test-framework-oauth` module has dependency on `keycloak-services`,
+which has many other 3rd party dependencies and this caused some issues when this was deployed on WildFly.
 
 How to possibly fix this:
-3.a) Use Quarkus (See step 2). 
+
+3.a) Use Quarkus instead of WildFly (See step 2). But not sure if it helps... 
+
 3.b) Make sure that Keycloak `oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
-not so much dependencies needed
+not so much changes needed though as `oauth` client has mostly dependencies on various constants and minor utilities from `keycloak-services`. 
 
 4) Add some other FAPI/OAuth/OIDC related functionality to this demo
 
 5) Cleanup. There are lots of TODOs in the codebase. Also maybe UI can be improved. The README instructions can be possibly improved and made more clear as well.
+Feel free to create GH issue at least if you find the trouble, but PR with contribution is welcome even more!
 
 (See above for potential contributions tips and also search for `TODO:` in the code :-) )
 
