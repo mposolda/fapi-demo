@@ -182,8 +182,8 @@ How to possibly fix this:
 
 3.a) Use Quarkus instead of WildFly (See step 2). But not sure if it helps... 
 
-3.b) Make sure that Keycloak `oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
-not so much changes needed though as `oauth` client has mostly dependencies on various constants and minor utilities from `keycloak-services`. 
+3.b) Make sure that Keycloak `keycloak-test-framework-oauth` module from test-framework does not have dependencies on `keycloak-services` (will require some changes in the Keycloak itself). There is
+maybe not so much changes needed as `keycloak-test-framework-oauth` client has mostly dependencies on various constants and minor utilities from `keycloak-services`. 
 
 4) Add some other FAPI/OAuth/OIDC related functionality to this demo
 
