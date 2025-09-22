@@ -4,6 +4,7 @@ import org.keycloak.example.Services;
 import org.keycloak.example.oauth.AbstractHttpPostRequest;
 import org.keycloak.example.oauth.AccessTokenRequest;
 import org.keycloak.example.oauth.AccessTokenResponse;
+import org.keycloak.example.oauth.PkceGenerator;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 
@@ -23,6 +24,8 @@ public class SessionData {
     private WebRequestContext<AbstractHttpPostRequest, AccessTokenResponse> tokenRequestCtx;
 
     private OIDCFlowConfigContext oidcFlowConfigContext = new OIDCFlowConfigContext(false, false, false, false, false);
+
+    private PkceGenerator pkceContext;
 
     private DPoPContext dpopContext;
 
@@ -85,5 +88,13 @@ public class SessionData {
             dpopContext = new DPoPContext();
         }
         return dpopContext;
+    }
+
+    public PkceGenerator getPkceContext() {
+        return pkceContext;
+    }
+
+    public void setPkceContext(PkceGenerator pkceContext) {
+        this.pkceContext = pkceContext;
     }
 }

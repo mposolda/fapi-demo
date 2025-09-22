@@ -6,7 +6,6 @@ import org.keycloak.example.util.MutualTLSUtils;
 import org.keycloak.example.util.MyConstants;
 import org.keycloak.example.util.OAuthClient;
 import org.keycloak.example.util.SessionData;
-import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 
 import static org.keycloak.example.util.MyConstants.SERVER_ROOT;
 

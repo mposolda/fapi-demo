@@ -28,7 +28,7 @@ From the root of this project, run:
 ```
 mvn clean install
 ```
-This is tested with OpenJDK 8 and Maven 3.6.3
+This is tested with OpenJDK 21 and Maven 3.9.9
 
 ## Start and prepare keycloak
 
@@ -39,87 +39,23 @@ This was tested with OpenJDK 21 and Keycloak nightly distribution (before 26.4.0
 cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 ```
 
-2) Start the server (but more things are needed to have MTLS client authentication working. See below...)
+2) Start the server 
 ```
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
 --https-client-auth=request --features=dpop --debug
 ```
 
-OUTDATED instructions for Keycloak on Wildfly (TODO: Remove them...)
 
-This was tested with OpenJDK 8 and Keycloak 18.0.0 legacy distribution based on Wildfly.
-( NOTE: Contribution welcome to replace this with Keycloak + Quarkus based dist. )
+3) Create and configure new realm
 
-1) Download Keycloak legacy (Wildfly based distribution), unzip on your laptop. Will be referred as KEYCLOAK_HOME in next steps:
+3.a) Go to `https://as.keycloak-fapi.org:8443/`, create admin account, login to admin console
 
-2) Copy keystore + truststore to the distribution:
-```
-cp keystores/keycloak.* $KEYCLOAK_HOME/standalone/configuration
-```
+3.b) Create realm `test`
 
-3) Configure `$KEYCLOAK_HOME/standalone/configuration/standalone.xml` for use keystore and truststore from above and logging
-( NOTE: Contribution welcome to replace this with JBoss CLI)
+3.c) Create some user with password in this realm 
 
-3.a) In the logging subsystem section add this to see advanced logging from client policies:
-```
-<logger category="org.keycloak.services.clientpolicy">
-    <level name="TRACE"/>
-</logger>
-```
-
-3.b) In the elytron subsystem in `tls` -> `keystores` part add this:
-```
-<key-store name="httpsKS">
-    <credential-reference clear-text="secret"/>
-    <implementation type="JKS"/>
-    <file path="keycloak.jks" relative-to="jboss.server.config.dir"/>
-</key-store>
-<key-store name="twoWayTS">
-    <credential-reference clear-text="secret"/>
-    <implementation type="JKS"/>
-    <file path="keycloak.truststore" relative-to="jboss.server.config.dir"/>
-</key-store>
-```
-
-3.c) In the `tls` -> `key-managers` part add this:
-```
-<key-manager name="httpsKM" key-store="httpsKS">
-    <credential-reference clear-text="secret"/>
-</key-manager>
-```
-
-3.d) Add new `trust-managers` part under `tls` element:
-```
-<trust-managers>
-    <trust-manager name="twoWayTM" key-store="twoWayTS"/>
-</trust-managers>
-```
-
-3.e) Finally under `tls` -> `server-ssl-contexts` add this:
-```
-<server-ssl-context name="httpsSSC" protocols="TLSv1.2" want-client-auth="true" key-manager="httpsKM" trust-manager="twoWayTM"
-    cipher-suite-filter="TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"/>
-```
-
-3.f In the `undertow` subsystem in the `server` element, comment the default `https-listener` and replace with this one:
-```
-<https-listener name="https" socket-binding="https" ssl-context="httpsSSC"/>
-```
-
-4) Run the server:
-```
-cd $KEYCLOAK_HOME/bin
-./standalone.sh -b as.keycloak-fapi.org
-```
-
-5) Create and configure new realm
-
-5.a) Go to `https://as.keycloak-fapi.org:8443/auth/`, create admin account, login to admin console
-
-5.b) Create realm `test` and some user in it 
-
-5.c) Under `Clients` -> `Initial Access Tokens` create new initial access token and copy it somewhere for the
+3.d) Under `Clients` -> `Initial Access Tokens` create new initial access token and copy it somewhere for the
 later use in the demo. For demo purposes, use bigger number of clients (EG. 99).
 
 
@@ -152,10 +88,11 @@ cd $APP_HOME/bin
 
 2) No FAPI yet
 
-2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client
+2.a) In the `Client Registration` part, you can provide Initial access token from Keycloak (See above) and register some client. Can be for example
+public client (Switch `Client authentication method` can be switched to `none`)
 
 2.b) You can click `Create Login URL` and click `Login` . After user authentication, you can be redirected back to the application.
-No FAPI is involved yet. You can see that tokens don't have `nonce` claim in it.
+You should see 200 from token response. No FAPI is involved yet. You can see that tokens don't have `nonce` claim in it (Tokens can be seen by click on the button `Show Last tokens`) 
 
 3) Fapi Baseline test
 
@@ -163,11 +100,13 @@ No FAPI is involved yet. You can see that tokens don't have `nonce` claim in it.
 link with the built-in `fapi-1-baseline` profile.
 
 3.b) Now in the application, you can register new client. You can doublecheck in the Keycloak admin console, that it has `Consent Required` switched to ON
+Note that you can doublecheck the client by looking at `Client_id` claim from the returned client registration response and then lookup this client by this client ID
+in the Keycloak admin console `Clients` tab.
 
 3.c) You can create login URL and login with new client. Note that to pass `fapi-1-baseline`, it is needed to check `Use Nonce param`
 and `Use PKCE`. Otherwise, Keycloak won't allow login.
 
-3.d) Authentication requires user to consent. After authentication, check that tokens have `nonce` claim (Ideally you should check that it matches with the
+3.d) Authentication requires user to consent. After authentication, check that ID token has `nonce` claim (Ideally you should check that it matches with the
 `nonce` sent in the initial request)
 
 4) Fapi advanced test

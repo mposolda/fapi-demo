@@ -369,6 +369,9 @@ public class WebEndpoint {
                     String dpopProof = session.getOrCreateDpopContext().generateDPoP(HttpMethod.POST, session.getAuthServerInfo().getTokenEndpoint(), null);
                     tokenRequest.dpopProof(dpopProof);
                 }
+                if (session.getOidcConfigContext().isUsePkce()) {
+                    tokenRequest.codeVerifier(session.getPkceContext());
+                }
                 AccessTokenResponse tokenResponse = tokenRequest.send();
 
                 InfoBean info = new InfoBean("Authentication request URL", session.getAuthenticationRequestUrl())
@@ -428,8 +431,11 @@ public class WebEndpoint {
                         .state(SecretGenerator.getInstance().generateSecureID())
                         .request(null);
             if (oidcFlowCtx.isUsePkce()) {
-                loginUrl.codeChallenge(PkceGenerator.s256());
+                PkceGenerator pkce = PkceGenerator.s256();
+                session.setPkceContext(pkce);
+                loginUrl.codeChallenge(pkce);
             } else {
+                session.setPkceContext(null);
                 loginUrl.codeChallenge(null, null);
             }
 
