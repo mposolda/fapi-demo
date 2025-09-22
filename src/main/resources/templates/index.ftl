@@ -41,7 +41,15 @@
                     </select>
                 </td>
             </tr>
-            <tr><td>Generate client keys: </td><td><input id="jwks" name="jwks" type="checkbox"></td></tr>
+            <tr><td>Generate client keys: </td>
+                <td>
+                    <#if clientConfigCtx.generateJwks>
+                        <input id="jwks" name="jwks" type="checkbox" checked>
+                    <#else>
+                        <input id="jwks" name="jwks" type="checkbox">
+                    </#if>
+                </td>
+            </tr>
         </table>
     </div>
     <br />

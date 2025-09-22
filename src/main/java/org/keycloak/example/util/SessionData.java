@@ -13,7 +13,7 @@ import org.keycloak.representations.oidc.OIDCClientRepresentation;
  */
 public class SessionData {
 
-    private ClientConfigContext clientConfigContext = new ClientConfigContext(null, "none");
+    private ClientConfigContext clientConfigContext = new ClientConfigContext(null, "none", false);
 
     private OIDCClientRepresentation registeredClient;
 

@@ -144,8 +144,7 @@ public class WebEndpoint {
                     ClientRegistrationWrapper clientReg = ClientRegistrationWrapper.create();
                     clientReg.setInitToken(initToken);
 
-                    boolean generateJwks = params.getFirst("jwks") != null; // TODO: Put to clientConfigContext to make it "persistent"
-                    OIDCClientRepresentation oidcClient = createClientToRegister(clientCtx.getClientAuthMethod(), generateJwks);
+                    OIDCClientRepresentation oidcClient = createClientToRegister(clientCtx.getClientAuthMethod(), clientCtx.isGenerateJwks());
                     try {
                         WebRequestContext<OIDCClientRepresentation, OIDCClientRepresentation> res = clientReg.registerClient(oidcClient);
                         session.setRegisteredClient(res.getResponse());
@@ -318,7 +317,8 @@ public class WebEndpoint {
     private ClientConfigContext collectClientConfigParams(MultivaluedMap<String, String> params, SessionData session) {
         String initToken = params.getFirst("init-token");
         String clientAuthMethod = params.getFirst("client-auth-method");
-        ClientConfigContext clientCtx = new ClientConfigContext(initToken, clientAuthMethod);
+        boolean generateJwks = params.getFirst("jwks") != null;
+        ClientConfigContext clientCtx = new ClientConfigContext(initToken, clientAuthMethod, generateJwks);
         session.setClientConfigContext(clientCtx);
         return clientCtx;
     }
@@ -363,6 +363,9 @@ public class WebEndpoint {
             try {
                 // WebResponse<List<NameValuePair>, OAuthClient.AccessTokenResponse> tokenResponse = Services.instance().getOauthClient().doAccessTokenRequest(code, null, MutualTLSUtils.newCloseableHttpClientWithDefaultKeyStoreAndTrustStore());
                 OAuthClient oauthClient = Services.instance().getOauthClient();
+
+                oauthClient.redirectUri(session.getRegisteredClient().getRedirectUris().get(0));
+
                 AccessTokenRequest tokenRequest = oauthClient.accessTokenRequest(code);
 
                 if (session.getOidcConfigContext().isUseDPoP()) {
@@ -414,13 +417,13 @@ public class WebEndpoint {
             String request = keys.getOidcRequest(requestObject, Services.instance().getSession().getRegisteredClient().getRequestObjectSigningAlg());
             // oauthClient.client(oidcClient.getClientId()); Already set after client registration
             return oauthClient.redirectUri(null)
-                    .responseType(null)
+                    .responseType("code id_token")
                     .loginForm()
                         .request(request)
                         .nonce(null)
                         .state(null)
                         .dpopJkt(dpopJkt)
-                    //.responseType(null);
+//                        .responseType(null);
             // oauthClient.responseMode("query");
                         .build();
         } else {
