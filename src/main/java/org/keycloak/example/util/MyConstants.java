@@ -10,5 +10,5 @@ public class MyConstants {
 
     public static final String SERVER_ROOT = "https://as.keycloak-fapi.org:8443";
 
-    public static final String EXACT_CERTIFICATE_SUBJECT_DN = "EMAILADDRESS=contact@keycloak.org, CN=Keycloak Intermediate CA, OU=Keycloak, O=Red Hat, ST=MA, C=US";
+    public static final String EXACT_CERTIFICATE_SUBJECT_DN = "EMAILADDRESS=test-user@localhost,CN=test-user@localhost,OU=Keycloak,O=Red Hat,L=Westford,ST=MA,C=US";
 }

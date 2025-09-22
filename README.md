@@ -43,7 +43,7 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 ```
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---features=dpop --debug
+--https-client-auth=request --features=dpop --debug
 ```
 
 OUTDATED instructions for Keycloak on Wildfly (TODO: Remove them...)
