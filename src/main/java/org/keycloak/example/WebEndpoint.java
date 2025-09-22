@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -433,14 +434,10 @@ public class WebEndpoint {
                     .loginForm()
                         .state(SecretGenerator.getInstance().generateSecureID())
                         .request(null);
-            if (oidcFlowCtx.isUsePkce()) {
-                PkceGenerator pkce = PkceGenerator.s256();
-                session.setPkceContext(pkce);
-                loginUrl.codeChallenge(pkce);
-            } else {
-                session.setPkceContext(null);
-                loginUrl.codeChallenge(null, null);
-            }
+
+            setPkceInAuthenticationRequest(session, oidcFlowCtx,
+                    pkce -> loginUrl.codeChallenge(pkce),
+                    () -> loginUrl.codeChallenge(null, null));
 
             if (oidcFlowCtx.isUseNonce()) {
                 loginUrl.nonce(SecretGenerator.getInstance().generateSecureID());
@@ -449,6 +446,18 @@ public class WebEndpoint {
             }
             loginUrl.dpopJkt(dpopJkt);
             return loginUrl.build();
+        }
+    }
+
+
+    private void setPkceInAuthenticationRequest(SessionData session, OIDCFlowConfigContext oidcFlowCtx, Consumer<PkceGenerator> pkceConsumer1, Runnable pkceCleaner) {
+        if (oidcFlowCtx.isUsePkce()) {
+            PkceGenerator pkce = PkceGenerator.s256();
+            session.setPkceContext(pkce);
+            pkceConsumer1.accept(pkce);
+        } else {
+            session.setPkceContext(null);
+            pkceCleaner.run();
         }
     }
 
@@ -478,6 +487,8 @@ public class WebEndpoint {
     }
 
     protected AuthorizationEndpointRequestObject createValidRequestObjectForSecureRequestObjectExecutor(String clientId, boolean nonce) {
+        SessionData session = Services.instance().getSession();
+
         AuthorizationEndpointRequestObject requestObject = new AuthorizationEndpointRequestObject();
         requestObject.id(UUIDUtil.generateId());
         requestObject.iat(Long.valueOf(Time.currentTime()));
@@ -491,13 +502,24 @@ public class WebEndpoint {
         requestObject.setState(state);
         requestObject.setMax_age(Integer.valueOf(600));
         requestObject.setOtherClaims("custom_claim_ein", "rot");
-        if (Services.instance().getSession().getAuthServerInfo() == null) {
+        if (session.getAuthServerInfo() == null) {
             throw new MyException("Please make sure that well-known info is executed before generating request object");
         }
-        requestObject.audience(Services.instance().getSession().getAuthServerInfo().getIssuer(), "https://example.com");
+        requestObject.audience(session.getAuthServerInfo().getIssuer(), "https://example.com");
         if (nonce) {
             requestObject.setNonce(UUIDUtil.generateId());
         }
+
+        setPkceInAuthenticationRequest(session, session.getOidcConfigContext(),
+                pkce -> {
+                    requestObject.setCodeChallenge(pkce.getCodeChallenge());
+                    requestObject.setCodeChallengeMethod(pkce.getCodeChallengeMethod());
+                },
+                () -> {
+                    requestObject.setCodeChallenge(null);
+                    requestObject.setCodeChallengeMethod(null);
+                });
+
         return requestObject;
     }
 

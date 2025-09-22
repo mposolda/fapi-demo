@@ -41,9 +41,10 @@ cp keystores/keycloak.* $KEYCLOAK_HOME/bin
 
 2) Start the server 
 ```
+cd $KEYCLOAK_HOME/bin
 ./kc.sh start --hostname=as.keycloak-fapi.org --https-key-store-file=keycloak.jks --https-key-store-password=secret \
 --https-trust-store-file=keycloak.truststore --https-trust-store-password=secret \
---https-client-auth=request --features=dpop --debug
+--https-client-auth=request --features=dpop
 ```
 
 
@@ -82,7 +83,7 @@ cd $APP_HOME/bin
 
 ## Demo
 
-### FAPI DEMO
+### FAPI 1 DEMO
 
 1) Go to `https://app.keycloak-fapi.org:8543/fapi-demo` 
 
@@ -96,7 +97,7 @@ You should see 200 from token response. No FAPI is involved yet. You can see tha
 
 3) Fapi Baseline test
 
-3.a) In the Keycloak admin console, in `Client Policies`, you can create create client policy with `any-client` condition and
+3.a) In the Keycloak admin console, in the tab `Realm Settings` -> `Client Policies`, you can create create client policy with `any-client` condition and
 link with the built-in `fapi-1-baseline` profile.
 
 3.b) Now in the application, you can register new client. You can doublecheck in the Keycloak admin console, that it has `Consent Required` switched to ON
