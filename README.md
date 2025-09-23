@@ -25,11 +25,27 @@ On linux, the easiest is to edit `/etc/hosts` file and add the host similar to t
 
 ## Build this project
 
+This project is tested with OpenJDK 21 and Maven 3.9.9
+
+### Temp: Build Keycloak
+
+It is temporarily needed to build Keycloak as project has dependency on Keycloak snapshot. You can either edit your `pom.xml` to allow downloading snapshots, but
+maybe easier is to build Keycloak on your laptop to make sure that snapshot artifacts available in your local repository. Some possible steps to do it:
+
+```
+git clone git@github.com:keycloak/keycloak.git
+cd keycloak
+mvn clean install -DskipTests=true -Pdistribution
+```
+
+_TODO: Remove this requirement and update dependency on released 26.4.0 Keycloak once it is released. Also might allow to remove --features=dpop from the startup command below_
+
+### Build project
+
 From the root of this project, run:
 ```
 mvn clean install
 ```
-This is tested with OpenJDK 21 and Maven 3.9.9
 
 ## Start and prepare keycloak
 
